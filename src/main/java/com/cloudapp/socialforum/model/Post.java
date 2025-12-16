@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
@@ -27,13 +28,19 @@ public class Post {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    @Column(name = "share_token", unique = true, length = 36)
+    private String shareToken;
+
+    @Column(name = "share_count")
+    private Integer shareCount = 0;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnoreProperties({"password"})
     private User user;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"post"})
+    @JsonIgnore
     private List<Comment> comments = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
