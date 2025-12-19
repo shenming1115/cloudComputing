@@ -1,0 +1,98 @@
+/* Search Header */
+.search-header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.search-bar-container {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.search-input {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-xl);
+    padding-left: 50px; /* Space for icon */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    font-size: 1.1rem;
+    background: var(--card-bg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-highlight);
+    box-shadow: var(--shadow-md);
+}
+
+.search-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+}
+
+/* Filters */
+.filters-container {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.filter-chip {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.filter-chip:hover {
+    border-color: var(--accent-pink);
+    color: var(--text-primary);
+}
+
+.filter-chip.active {
+    background: var(--accent-pink);
+    color: var(--text-primary);
+    border-color: var(--accent-pink);
+}
+
+/* Results Grid */
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+}
+
+/* User Result Card */
+.user-result-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+}
+
+.user-result-info {
+    flex: 1;
+}
+
+.user-result-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.user-result-handle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
