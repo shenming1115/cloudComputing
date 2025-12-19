@@ -26,18 +26,41 @@ async function handleLogin(event) {
             body: JSON.stringify({ username, password })
         });
 
+        const contentType = response.headers.get("content-type");
         if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('user', JSON.stringify(data));
-            window.location.href = 'index.html';
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const data = await response.json();
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('user', JSON.stringify(data));
+                window.location.href = 'index.html';
+            } else {
+                // Fallback if successful but no JSON returned
+                localStorage.setItem('isLoggedIn', 'true');
+                // We might not have user details here, so we might need to fetch them or just redirect
+                window.location.href = 'index.html';
+            }
         } else {
-            const error = await response.json();
-            alert('Login failed: ' + (error.error || 'Unknown error'));
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const error = await response.json();
+                // Check for various error formats
+                const msg = error.message || error.error || 'Unknown error';
+                alert('Login failed: ' + msg);
+            } else {
+                if (response.status === 404) {
+                    alert('Login service not found (404). Please check the server URL.');
+                } else if (response.status === 405) {
+                    alert('Login method not allowed (405). This is a server configuration issue.');
+                } else if (response.status === 500) {
+                    alert('Internal Server Error (500). Please try again later.');
+                } else {
+                    const text = await response.text();
+                    alert(`Login failed (${response.status}): ${text.substring(0, 100)}`);
+                }
+            }
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred during login.');
+        alert('Network or System Error: ' + error.message);
     }
 }
 
@@ -56,23 +79,43 @@ async function handleRegister(event) {
             body: JSON.stringify({ username, email, password })
         });
 
+        const contentType = response.headers.get("content-type");
+        
         if (response.ok) {
-            const data = await response.json();
             alert('Registration successful! Please login.');
             switchTab('login');
         } else {
-            // Handle validation errors or other errors
-            const errorData = await response.json();
-            let errorMessage = 'Registration failed';
-            if (errorData.errors) {
-                errorMessage += ': ' + Object.values(errorData.errors).join(', ');
-            } else if (errorData.message) {
-                errorMessage += ': ' + errorData.message;
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const errorData = await response.json();
+                let errorMessage = 'Registration failed';
+                
+                if (errorData.errors) {
+                    // Validation errors map
+                    errorMessage += ':\n' + Object.values(errorData.errors).join('\n');
+                } else if (errorData.message) {
+                    // Custom exception message
+                    errorMessage += ': ' + errorData.message;
+                } else if (errorData.error) {
+                    // Standard Spring error
+                    errorMessage += ': ' + errorData.error;
+                }
+                
+                alert(errorMessage);
+            } else {
+                if (response.status === 404) {
+                    alert('Registration service not found (404). Please check the server URL.');
+                } else if (response.status === 405) {
+                    alert('Registration method not allowed (405). This is a server configuration issue.');
+                } else if (response.status === 500) {
+                    alert('Internal Server Error (500). Please try again later.');
+                } else {
+                    const text = await response.text();
+                    alert(`Registration failed (${response.status}): ${text.substring(0, 100)}...`);
+                }
             }
-            alert(errorMessage);
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred during registration.');
+        alert('Network or System Error: ' + error.message);
     }
 }
