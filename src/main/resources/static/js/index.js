@@ -158,8 +158,8 @@ function handleComment(postId) {
         window.location.href = 'login.html';
         return;
     }
-    // TODO: Implement comment logic
-    alert('Comment feature coming soon!');
+    // Redirect to post details page
+    window.location.href = `post-details.html?id=${postId}`;
 }
 
 function handleShare(postId) {
