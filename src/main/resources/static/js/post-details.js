@@ -194,4 +194,4 @@ async function sharePost(postId) {
     MOCK_COMMENTS.unshift(newComment);
     loadComments();
     commentInput.value = '';
-}
+

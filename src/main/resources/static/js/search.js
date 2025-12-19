@@ -146,7 +146,7 @@ function createPostHTML(post) {
 }
 
     renderResults(results);
-}
+
 
 function renderResults(results) {
     if (results.length === 0) {

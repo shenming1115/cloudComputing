@@ -57,18 +57,27 @@ async function renderPosts() {
         if (response.ok) {
             const posts = await response.json();
             
-            const formattedPosts = posts.map(post => ({
-                id: post.id,
-                user: { 
-                    name: post.user.username, 
-                    handle: '@' + post.user.username, 
-                    avatar: post.user.username.charAt(0).toUpperCase() 
-                },
-                content: post.content,
-                timestamp: new Date(post.createdAt).toLocaleString(),
-                likes: 0,
-                comments: post.comments ? post.comments.length : 0
-            }));
+            if (!Array.isArray(posts)) {
+                console.error('Expected array of posts but got:', posts);
+                postsFeed.innerHTML = '<div class="text-center">Invalid data received from server.</div>';
+                return;
+            }
+
+            const formattedPosts = posts.map(post => {
+                const user = post.user || { username: 'Unknown' };
+                return {
+                    id: post.id,
+                    user: { 
+                        name: user.username, 
+                        handle: '@' + user.username, 
+                        avatar: user.username ? user.username.charAt(0).toUpperCase() : '?' 
+                    },
+                    content: post.content,
+                    timestamp: new Date(post.createdAt).toLocaleString(),
+                    likes: 0,
+                    comments: post.comments ? post.comments.length : 0
+                };
+            });
             
             if (formattedPosts.length === 0) {
                 postsFeed.innerHTML = '<div class="text-center" style="padding: 40px; color: var(--text-secondary);">No posts yet. Be the first to post!</div>';
@@ -76,12 +85,12 @@ async function renderPosts() {
                 postsFeed.innerHTML = formattedPosts.map(post => createPostHTML(post)).join('');
             }
         } else {
-            console.error('Failed to fetch posts');
-            postsFeed.innerHTML = '<div class="text-center">Failed to load posts.</div>';
+            console.error('Failed to fetch posts:', response.status, response.statusText);
+            postsFeed.innerHTML = `<div class="text-center">Failed to load posts. Server returned ${response.status} ${response.statusText}</div>`;
         }
     } catch (error) {
         console.error('Error:', error);
-        postsFeed.innerHTML = '<div class="text-center">Error loading posts.</div>';
+        postsFeed.innerHTML = `<div class="text-center">Error loading posts: ${error.message}</div>`;
     }
 }
 
