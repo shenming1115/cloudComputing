@@ -213,3 +213,38 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
+/* Trending Topics */
+.trending-topic {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: block; /* Ensure padding works correctly */
+}
+
+.trending-topic:hover {
+    background-color: var(--bg-secondary);
+    color: var(--primary-color);
+    text-decoration: none;
+    transform: translateX(5px);
+}
+
+/* Who to Follow */
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    text-decoration: none;
+    color: inherit;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.suggestion-item:hover {
+    background-color: var(--bg-secondary);
+}
+
