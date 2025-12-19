@@ -1,31 +1,3 @@
-// Mock Data
-const MOCK_RESULTS = {
-    posts: [
-        {
-            id: 1,
-            type: 'post',
-            user: { name: 'Sarah Wilson', handle: '@sarahw', avatar: 'S' },
-            content: 'Just finished working on the new design system. Loving the minimalist vibes! 🎨✨ #Design #Minimalism',
-            timestamp: '2 hours ago',
-            likes: 24,
-            comments: 5
-        },
-        {
-            id: 2,
-            type: 'post',
-            user: { name: 'David Chen', handle: '@davidc', avatar: 'D' },
-            content: 'Cloud computing is changing the way we deploy applications. The scalability is incredible.',
-            timestamp: '4 hours ago',
-            likes: 15,
-            comments: 2
-        }
-    ],
-    people: [
-        { id: 101, type: 'user', name: 'Alice Design', handle: '@alice', avatar: 'A', bio: 'UI/UX Designer' },
-        { id: 102, type: 'user', name: 'Bob Builder', handle: '@bob_dev', avatar: 'B', bio: 'Full Stack Developer' }
-    ]
-};
-
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
 const searchResults = document.getElementById('searchResults');
@@ -57,6 +29,7 @@ function checkLoginStatus() {
 
 function logout() {
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
     window.location.href = 'index.html';
 }
 
@@ -77,7 +50,7 @@ function setFilter(filter) {
     }
 }
 
-function performSearch(query) {
+async function performSearch(query) {
     if (!query.trim()) {
         searchResults.innerHTML = `
             <div class="text-center" style="grid-column: 1/-1; color: var(--text-secondary); padding: 40px;">
@@ -87,16 +60,90 @@ function performSearch(query) {
         return;
     }
 
-    // Simulate API search
-    const results = [];
-    
-    if (currentFilter === 'all' || currentFilter === 'posts') {
-        results.push(...MOCK_RESULTS.posts.filter(p => p.content.toLowerCase().includes(query.toLowerCase())));
+    searchResults.innerHTML = '<div class="text-center" style="grid-column: 1/-1;">Searching...</div>';
+
+    try {
+        // Fetch all posts (Client-side filtering for now as backend search is not implemented)
+        // In a real app, we would have /api/search?q=query
+        const response = await fetch('/api/posts');
+        if (response.ok) {
+            const posts = await response.json();
+            const filteredPosts = posts.filter(post => 
+                post.content.toLowerCase().includes(query.toLowerCase()) ||
+                (post.user && post.user.username.toLowerCase().includes(query.toLowerCase()))
+            );
+
+            renderResults(filteredPosts, query);
+        } else {
+            searchResults.innerHTML = '<div class="text-center" style="grid-column: 1/-1;">Error searching posts.</div>';
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+        searchResults.innerHTML = '<div class="text-center" style="grid-column: 1/-1;">Error searching posts.</div>';
     }
-    
-    if (currentFilter === 'all' || currentFilter === 'people') {
-        results.push(...MOCK_RESULTS.people.filter(u => u.name.toLowerCase().includes(query.toLowerCase()) || u.handle.toLowerCase().includes(query.toLowerCase())));
+}
+
+function renderResults(posts, query) {
+    if (posts.length === 0) {
+        searchResults.innerHTML = `
+            <div class="text-center" style="grid-column: 1/-1; color: var(--text-secondary); padding: 40px;">
+                No results found for "${query}"
+            </div>
+        `;
+        return;
     }
+
+    // Filter based on type if needed (currently only posts are supported)
+    let displayPosts = posts;
+    if (currentFilter === 'people') {
+        displayPosts = []; // No user search yet
+    }
+
+    if (displayPosts.length === 0 && currentFilter === 'people') {
+         searchResults.innerHTML = `
+            <div class="text-center" style="grid-column: 1/-1; color: var(--text-secondary); padding: 40px;">
+                User search is not supported yet.
+            </div>
+        `;
+        return;
+    }
+
+    searchResults.innerHTML = displayPosts.map(post => createPostHTML(post)).join('');
+}
+
+function createPostHTML(post) {
+    const user = post.user || { username: 'Unknown' };
+    const avatar = user.username ? user.username.charAt(0).toUpperCase() : '?';
+    const timestamp = new Date(post.createdAt).toLocaleString();
+    const likes = 0;
+    const commentsCount = post.comments ? post.comments.length : 0;
+
+    return `
+        <article class="card post-card">
+            <div class="post-header">
+                <div class="user-avatar">${avatar}</div>
+                <div class="post-info">
+                    <h3>${user.username}</h3>
+                    <span>@${user.username} · ${timestamp}</span>
+                </div>
+            </div>
+            <div class="post-content">
+                ${post.content}
+            </div>
+            <div class="post-actions">
+                <button class="action-btn">
+                    <span>♥</span> ${likes}
+                </button>
+                <button class="action-btn" onclick="window.location.href='post-details.html?id=${post.id}'">
+                    <span>💬</span> ${commentsCount}
+                </button>
+                <button class="action-btn">
+                    <span>↗</span> Share
+                </button>
+            </div>
+        </article>
+    `;
+}
 
     renderResults(results);
 }

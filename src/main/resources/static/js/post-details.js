@@ -1,28 +1,3 @@
-// Mock Data (In a real app, this would come from an API based on URL param ID)
-const MOCK_POST = {
-    id: 1,
-    user: { name: 'Sarah Wilson', handle: '@sarahw', avatar: 'S' },
-    content: 'Just finished working on the new design system. Loving the minimalist vibes! 🎨✨ #Design #Minimalism',
-    timestamp: '2 hours ago',
-    likes: 24,
-    comments: 5
-};
-
-const MOCK_COMMENTS = [
-    {
-        id: 1,
-        user: { name: 'David Chen', handle: '@davidc', avatar: 'D' },
-        content: 'This looks amazing! Great job on the color palette.',
-        timestamp: '1 hour ago'
-    },
-    {
-        id: 2,
-        user: { name: 'Emily Parker', handle: '@emilyp', avatar: 'E' },
-        content: 'So clean and fresh. Love it!',
-        timestamp: '30 mins ago'
-    }
-];
-
 // DOM Elements
 const postContainer = document.getElementById('postContainer');
 const commentsList = document.getElementById('commentsList');
@@ -44,33 +19,63 @@ function checkLoginStatus() {
 
 function logout() {
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
     window.location.href = 'index.html';
 }
 
-function loadPostDetails() {
-    // In reality, we would get the ID from URL params: const urlParams = new URLSearchParams(window.location.search);
-    // const postId = urlParams.get('id');
-    
+function getPostIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id');
+}
+
+async function loadPostDetails() {
+    const postId = getPostIdFromUrl();
+    if (!postId) {
+        postContainer.innerHTML = '<div class="text-center">Post ID not found.</div>';
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/posts/${postId}`);
+        if (response.ok) {
+            const post = await response.json();
+            renderPost(post);
+        } else {
+            postContainer.innerHTML = '<div class="text-center">Post not found.</div>';
+        }
+    } catch (error) {
+        console.error('Error loading post:', error);
+        postContainer.innerHTML = '<div class="text-center">Error loading post.</div>';
+    }
+}
+
+function renderPost(post) {
+    const user = post.user || { username: 'Unknown', id: 0 };
+    const avatar = user.username ? user.username.charAt(0).toUpperCase() : '?';
+    const timestamp = new Date(post.createdAt).toLocaleString();
+    const likes = 0; // TODO: Implement likes
+    const commentsCount = post.comments ? post.comments.length : 0;
+
     postContainer.innerHTML = `
         <article class="card post-card">
             <div class="post-header">
-                <div class="user-avatar">${MOCK_POST.user.avatar}</div>
+                <div class="user-avatar">${avatar}</div>
                 <div class="post-info">
-                    <h3>${MOCK_POST.user.name}</h3>
-                    <span>${MOCK_POST.user.handle} · ${MOCK_POST.timestamp}</span>
+                    <h3>${user.username}</h3>
+                    <span>@${user.username} · ${timestamp}</span>
                 </div>
             </div>
             <div class="post-content" style="font-size: 1.1rem;">
-                ${MOCK_POST.content}
+                ${post.content}
             </div>
             <div class="post-actions">
                 <button class="action-btn">
-                    <span>♥</span> ${MOCK_POST.likes}
+                    <span>♥</span> ${likes}
                 </button>
                 <button class="action-btn">
-                    <span>💬</span> ${MOCK_POST.comments}
+                    <span>💬</span> ${commentsCount}
                 </button>
-                <button class="action-btn">
+                <button class="action-btn" onclick="sharePost(${post.id})">
                     <span>↗</span> Share
                 </button>
             </div>
@@ -78,18 +83,40 @@ function loadPostDetails() {
     `;
 }
 
-function loadComments() {
-    commentsList.innerHTML = MOCK_COMMENTS.map(comment => createCommentHTML(comment)).join('');
+async function loadComments() {
+    const postId = getPostIdFromUrl();
+    if (!postId) return;
+
+    try {
+        const response = await fetch(`/api/comments/post/${postId}`);
+        if (response.ok) {
+            const comments = await response.json();
+            if (comments.length === 0) {
+                commentsList.innerHTML = '<div class="text-center" style="padding: 20px; color: var(--text-secondary);">No comments yet. Be the first to comment!</div>';
+            } else {
+                commentsList.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
+            }
+        } else {
+            commentsList.innerHTML = '<div class="text-center">Failed to load comments.</div>';
+        }
+    } catch (error) {
+        console.error('Error loading comments:', error);
+        commentsList.innerHTML = '<div class="text-center">Error loading comments.</div>';
+    }
 }
 
 function createCommentHTML(comment) {
+    const user = comment.user || { username: 'Unknown' };
+    const avatar = user.username ? user.username.charAt(0).toUpperCase() : '?';
+    const timestamp = new Date(comment.createdAt).toLocaleString();
+
     return `
         <div class="comment-item">
-            <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">${comment.user.avatar}</div>
+            <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">${avatar}</div>
             <div class="comment-content">
                 <div class="comment-header">
-                    <span class="comment-author">${comment.user.name}</span>
-                    <span class="comment-time">${comment.timestamp}</span>
+                    <span class="comment-author">${user.username}</span>
+                    <span class="comment-time">${timestamp}</span>
                 </div>
                 <div class="comment-text">${comment.content}</div>
             </div>
@@ -97,7 +124,63 @@ function createCommentHTML(comment) {
     `;
 }
 
-function submitComment() {
+async function submitComment() {
+    const content = commentInput.value.trim();
+    if (!content) return;
+
+    const postId = getPostIdFromUrl();
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    if (!user || !postId) return;
+
+    const commentData = {
+        content: content,
+        postId: parseInt(postId),
+        userId: user.id
+    };
+
+    try {
+        const response = await fetch('/api/comments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(commentData)
+        });
+
+        if (response.ok) {
+            commentInput.value = '';
+            loadComments(); // Reload comments
+            loadPostDetails(); // Reload post to update comment count
+        } else {
+            alert('Failed to post comment');
+        }
+    } catch (error) {
+        console.error('Error posting comment:', error);
+        alert('Error posting comment');
+    }
+}
+
+async function sharePost(postId) {
+    try {
+        const response = await fetch(`/api/posts/${postId}/share`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            // Copy to clipboard
+            navigator.clipboard.writeText(data.shareUrl).then(() => {
+                alert('Share link copied to clipboard!');
+            });
+        } else {
+            alert('Failed to generate share link');
+        }
+    } catch (error) {
+        console.error('Error sharing post:', error);
+        alert('Error sharing post');
+    }
+}
     const content = commentInput.value.trim();
     if (!content) return;
 

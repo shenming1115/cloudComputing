@@ -1,23 +1,3 @@
-// Mock Data for User Posts
-const USER_POSTS = [
-    {
-        id: 101,
-        user: { name: 'Current User', handle: '@user', avatar: 'U' },
-        content: 'Setting up my new development environment. Clean desk, clean code. 🖥️',
-        timestamp: '2 days ago',
-        likes: 12,
-        comments: 1
-    },
-    {
-        id: 102,
-        user: { name: 'Current User', handle: '@user', avatar: 'U' },
-        content: 'Just deployed my first app to the cloud! #CloudComputing #DevOps',
-        timestamp: '5 days ago',
-        likes: 34,
-        comments: 4
-    }
-];
-
 // DOM Elements
 const userPostsFeed = document.getElementById('userPostsFeed');
 const editProfileModal = document.getElementById('editProfileModal');
@@ -25,6 +5,7 @@ const editProfileModal = document.getElementById('editProfileModal');
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
+    loadUserProfile();
     renderUserPosts();
 });
 
@@ -37,12 +18,63 @@ function checkLoginStatus() {
 
 function logout() {
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
     window.location.href = 'index.html';
 }
 
+function loadUserProfile() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+        document.querySelector('.profile-name').textContent = user.username;
+        document.querySelector('.profile-handle').textContent = '@' + user.username;
+        document.querySelector('.profile-avatar-large').textContent = user.username.charAt(0).toUpperCase();
+        
+        // Update nav avatar as well
+        const navAvatar = document.getElementById('navUserAvatar');
+        if (navAvatar) navAvatar.textContent = user.username.charAt(0).toUpperCase();
+    }
+}
+
 // Render Posts
-function renderUserPosts() {
-    userPostsFeed.innerHTML = USER_POSTS.map(post => createPostHTML(post)).join('');
+async function renderUserPosts() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+
+    try {
+        const response = await fetch(`/api/posts/user/${user.id}`);
+        if (response.ok) {
+            const posts = await response.json();
+            
+            const formattedPosts = posts.map(post => ({
+                id: post.id,
+                user: { 
+                    name: post.user.username, 
+                    handle: '@' + post.user.username, 
+                    avatar: post.user.username.charAt(0).toUpperCase() 
+                },
+                content: post.content,
+                timestamp: new Date(post.createdAt).toLocaleString(),
+                likes: 0,
+                comments: post.comments ? post.comments.length : 0
+            }));
+            
+            if (formattedPosts.length === 0) {
+                userPostsFeed.innerHTML = '<div class="text-center" style="padding: 40px; color: var(--text-secondary);">No posts yet.</div>';
+            } else {
+                userPostsFeed.innerHTML = formattedPosts.map(post => createPostHTML(post)).join('');
+            }
+
+            // Update stats (Posts count)
+            const stats = document.querySelectorAll('.stat-value');
+            if (stats.length > 0) stats[0].textContent = posts.length;
+
+        } else {
+            userPostsFeed.innerHTML = '<div class="text-center">Failed to load posts.</div>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        userPostsFeed.innerHTML = '<div class="text-center">Error loading posts.</div>';
+    }
 }
 
 function createPostHTML(post) {
@@ -83,8 +115,8 @@ function closeEditProfileModal() {
 }
 
 function saveProfile() {
-    // TODO: Implement API call to save profile
-    alert('Profile updated successfully!');
+    // TODO: Implement API call to save profile (User update endpoint needed in backend)
+    alert('Profile update not implemented in backend yet!');
     closeEditProfileModal();
 }
 

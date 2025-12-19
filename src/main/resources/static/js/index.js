@@ -1,31 +1,3 @@
-// Mock Data
-const MOCK_POSTS = [
-    {
-        id: 1,
-        user: { name: 'Sarah Wilson', handle: '@sarahw', avatar: 'S' },
-        content: 'Just finished working on the new design system. Loving the minimalist vibes! 🎨✨ #Design #Minimalism',
-        timestamp: '2 hours ago',
-        likes: 24,
-        comments: 5
-    },
-    {
-        id: 2,
-        user: { name: 'David Chen', handle: '@davidc', avatar: 'D' },
-        content: 'Cloud computing is changing the way we deploy applications. The scalability is incredible.',
-        timestamp: '4 hours ago',
-        likes: 15,
-        comments: 2
-    },
-    {
-        id: 3,
-        user: { name: 'Emily Parker', handle: '@emilyp', avatar: 'E' },
-        content: 'Coffee and coding - the perfect Sunday morning setup. ☕💻',
-        timestamp: '6 hours ago',
-        likes: 42,
-        comments: 8
-    }
-];
-
 // DOM Elements
 const postsFeed = document.getElementById('postsFeed');
 const createPostModal = document.getElementById('createPostModal');
@@ -46,8 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkLoginStatus() {
-    // Check localStorage for login status (simulated)
     isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const user = JSON.parse(localStorage.getItem('user'));
 
     if (isLoggedIn) {
         navGuest.style.display = 'none';
@@ -55,23 +27,62 @@ function checkLoginStatus() {
         navProfileLink.style.display = 'flex';
         heroSection.style.display = 'none';
         if (createPostCard) createPostCard.style.display = 'flex';
+
+        // Update avatar
+        if (user && user.username) {
+             const avatar = user.username.charAt(0).toUpperCase();
+             document.getElementById('navUserAvatar').textContent = avatar;
+             const widgetAvatar = document.querySelector('.create-post-card .user-avatar');
+             if (widgetAvatar) widgetAvatar.textContent = avatar;
+        }
     } else {
         navGuest.style.display = 'flex';
         navUser.style.display = 'none';
         navProfileLink.style.display = 'none';
         heroSection.style.display = 'block';
-        if (createPostCard) createPostCard.style.display = 'none'; // Hide create post widget for guests
+        if (createPostCard) createPostCard.style.display = 'none';
     }
 }
 
 function logout() {
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
     window.location.reload();
 }
 
 // Render Posts
-function renderPosts() {
-    postsFeed.innerHTML = MOCK_POSTS.map(post => createPostHTML(post)).join('');
+async function renderPosts() {
+    try {
+        const response = await fetch('/api/posts');
+        if (response.ok) {
+            const posts = await response.json();
+            
+            const formattedPosts = posts.map(post => ({
+                id: post.id,
+                user: { 
+                    name: post.user.username, 
+                    handle: '@' + post.user.username, 
+                    avatar: post.user.username.charAt(0).toUpperCase() 
+                },
+                content: post.content,
+                timestamp: new Date(post.createdAt).toLocaleString(),
+                likes: 0,
+                comments: post.comments ? post.comments.length : 0
+            }));
+            
+            if (formattedPosts.length === 0) {
+                postsFeed.innerHTML = '<div class="text-center" style="padding: 40px; color: var(--text-secondary);">No posts yet. Be the first to post!</div>';
+            } else {
+                postsFeed.innerHTML = formattedPosts.map(post => createPostHTML(post)).join('');
+            }
+        } else {
+            console.error('Failed to fetch posts');
+            postsFeed.innerHTML = '<div class="text-center">Failed to load posts.</div>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        postsFeed.innerHTML = '<div class="text-center">Error loading posts.</div>';
+    }
 }
 
 function createPostHTML(post) {
@@ -117,7 +128,7 @@ function closeCreatePostModal() {
 }
 
 // Post Actions
-function submitPost() {
+async function submitPost() {
     if (!isLoggedIn) {
         window.location.href = 'login.html';
         return;
@@ -126,18 +137,32 @@ function submitPost() {
     const content = postContentInput.value.trim();
     if (!content) return;
 
-    const newPost = {
-        id: MOCK_POSTS.length + 1,
-        user: { name: 'Current User', handle: '@user', avatar: 'U' },
-        content: content,
-        timestamp: 'Just now',
-        likes: 0,
-        comments: 0
-    };
+    const user = JSON.parse(localStorage.getItem('user'));
 
-    MOCK_POSTS.unshift(newPost);
-    renderPosts();
-    closeCreatePostModal();
+    try {
+        const response = await fetch('/api/posts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                content: content,
+                userId: user.id,
+                imageUrl: null
+            })
+        });
+
+        if (response.ok) {
+            renderPosts();
+            closeCreatePostModal();
+        } else {
+            const error = await response.json();
+            alert('Failed to create post: ' + (error.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error creating post');
+    }
 }
 
 function handleLike(postId) {
@@ -145,12 +170,7 @@ function handleLike(postId) {
         window.location.href = 'login.html';
         return;
     }
-
-    const post = MOCK_POSTS.find(p => p.id === postId);
-    if (post) {
-        post.likes++;
-        renderPosts();
-    }
+    alert('Like feature not implemented in backend yet.');
 }
 
 function handleComment(postId) {
@@ -158,7 +178,6 @@ function handleComment(postId) {
         window.location.href = 'login.html';
         return;
     }
-    // Redirect to post details page
     window.location.href = `post-details.html?id=${postId}`;
 }
 
@@ -167,8 +186,17 @@ function handleShare(postId) {
         window.location.href = 'login.html';
         return;
     }
-    // TODO: Implement share logic
-    alert('Share feature coming soon!');
+    // Call share endpoint
+    fetch(`/api/posts/${postId}/share`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.shareUrl) {
+                prompt("Copy this link to share:", data.shareUrl);
+            } else {
+                alert('Could not generate share link');
+            }
+        })
+        .catch(err => console.error(err));
 }
 
 // Close modal when clicking outside
