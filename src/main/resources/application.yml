@@ -24,6 +24,11 @@ spring:
       hibernate:
         dialect: ${HIBERNATE_DIALECT:org.hibernate.dialect.MySQLDialect}
         format_sql: true
+  
+  sql:
+    init:
+      mode: ${SQL_INIT_MODE:never}  # never 跳过 data.sql（避免 RDS 连接超时导致启动失败）
+      continue-on-error: true  # 如果数据已存在，继续执行而不报错
 
   lifecycle:
     timeout-per-shutdown-phase: 20s

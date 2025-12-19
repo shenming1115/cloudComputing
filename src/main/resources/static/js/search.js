@@ -118,17 +118,21 @@ function createPostHTML(post) {
     const likes = 0;
     const commentsCount = post.comments ? post.comments.length : 0;
 
+    // 安全地转义用户输入
+    const safeUsername = escapeHtml(user.username);
+    const safeContent = sanitizeContent(post.content);
+
     return `
         <article class="card post-card">
             <div class="post-header">
                 <div class="user-avatar">${avatar}</div>
                 <div class="post-info">
-                    <h3>${user.username}</h3>
-                    <span>@${user.username} · ${timestamp}</span>
+                    <h3>${safeUsername}</h3>
+                    <span>@${safeUsername} · ${timestamp}</span>
                 </div>
             </div>
             <div class="post-content">
-                ${post.content}
+                ${safeContent}
             </div>
             <div class="post-actions">
                 <button class="action-btn">

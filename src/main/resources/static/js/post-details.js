@@ -56,17 +56,21 @@ function renderPost(post) {
     const likes = 0; // TODO: Implement likes
     const commentsCount = post.comments ? post.comments.length : 0;
 
+    // 安全地转义用户输入
+    const safeUsername = escapeHtml(user.username);
+    const safeContent = sanitizeContent(post.content);
+
     postContainer.innerHTML = `
         <article class="card post-card">
             <div class="post-header">
                 <div class="user-avatar">${avatar}</div>
                 <div class="post-info">
-                    <h3>${user.username}</h3>
-                    <span>@${user.username} · ${timestamp}</span>
+                    <h3>${safeUsername}</h3>
+                    <span>@${safeUsername} · ${timestamp}</span>
                 </div>
             </div>
             <div class="post-content" style="font-size: 1.1rem;">
-                ${post.content}
+                ${safeContent}
             </div>
             <div class="post-actions">
                 <button class="action-btn">
@@ -110,15 +114,19 @@ function createCommentHTML(comment) {
     const avatar = user.username ? user.username.charAt(0).toUpperCase() : '?';
     const timestamp = new Date(comment.createdAt).toLocaleString();
 
+    // 安全地转义用户输入
+    const safeUsername = escapeHtml(user.username);
+    const safeContent = sanitizeContent(comment.content);
+
     return `
         <div class="comment-item">
             <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">${avatar}</div>
             <div class="comment-content">
                 <div class="comment-header">
-                    <span class="comment-author">${user.username}</span>
+                    <span class="comment-author">${safeUsername}</span>
                     <span class="comment-time">${timestamp}</span>
                 </div>
-                <div class="comment-text">${comment.content}</div>
+                <div class="comment-text">${safeContent}</div>
             </div>
         </div>
     `;

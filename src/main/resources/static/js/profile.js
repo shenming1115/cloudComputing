@@ -78,17 +78,22 @@ async function renderUserPosts() {
 }
 
 function createPostHTML(post) {
+    // 安全地转义用户输入
+    const safeContent = sanitizeContent(post.content);
+    const safeName = escapeHtml(post.user.name);
+    const safeHandle = escapeHtml(post.user.handle);
+    
     return `
         <article class="card post-card">
             <div class="post-header">
                 <div class="user-avatar">${post.user.avatar}</div>
                 <div class="post-info">
-                    <h3>${post.user.name}</h3>
-                    <span>${post.user.handle} · ${post.timestamp}</span>
+                    <h3>${safeName}</h3>
+                    <span>${safeHandle} · ${post.timestamp}</span>
                 </div>
             </div>
             <div class="post-content">
-                ${post.content}
+                ${safeContent}
             </div>
             <div class="post-actions">
                 <button class="action-btn">
