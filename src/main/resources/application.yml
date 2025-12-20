@@ -59,5 +59,5 @@ management:
 aws:
   region: ${AWS_REGION:ap-southeast-2}
   s3:
-    bucket-name: ${AWS_S3_BUCKET:social-forum-media}
+    bucket-name: ${AWS_S3_BUCKET:social-forum-artifacts}
     region: ${AWS_REGION:ap-southeast-2}

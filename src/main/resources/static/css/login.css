@@ -4,15 +4,20 @@
     align-items: center;
     justify-content: center;
     padding: var(--spacing-md);
-    background-color: #ffffff; /* Apple login is usually on white or very light gray */
+    background: rgba(255, 255, 255, 0.98);
+    position: relative;
+    z-index: 100;
 }
 
 .auth-card {
     width: 100%;
     max-width: 440px;
-    background: transparent; /* Blend with background */
-    padding: 40px 0;
-    /* No shadow for Apple ID look, just clean layout */
+    background: rgba(255, 255, 255, 0.95);
+    padding: 50px 40px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 101;
 }
 
 .auth-header {
@@ -23,12 +28,12 @@
 .auth-header h1 {
     font-size: 32px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #1d1d1f;
     margin-bottom: 8px;
 }
 
 .auth-header p {
-    color: var(--text-secondary);
+    color: #6e6e73;
     font-size: 17px;
 }
 

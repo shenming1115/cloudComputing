@@ -1,4 +1,33 @@
 /* Navbar overrides */
+.navbar {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--spacing-lg);
+}
+
+.navbar .container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+}
+
+.navbar .nav-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin-right: auto;
+}
+
+.navbar .nav-links {
+    display: flex;
+    gap: var(--spacing-xl);
+    margin: 0 auto;
+    padding: 0 var(--spacing-xl);
+}
+
 .nav-link, .nav-item {
     color: var(--text-secondary);
     font-size: 16px;
@@ -9,16 +38,6 @@
 .nav-link:hover, .nav-link.active,
 .nav-item:hover, .nav-item.active {
     color: var(--text-primary);
-}
-
-.nav-content, .container {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 100%;
 }
 
 .nav-actions {
