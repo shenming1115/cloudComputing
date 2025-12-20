@@ -268,9 +268,12 @@ async function submitPost() {
         if (selectedFile) {
             const formData = new FormData();
             formData.append('file', selectedFile);
-            formData.append('userId', currentUser.id);
 
-            const uploadEndpoint = selectedMediaType === 'image' ? '/api/posts/upload-image' : '/api/posts/upload-video';
+            const uploadEndpoint = selectedMediaType === 'image' 
+                ? '/api/upload/image' 
+                : selectedMediaType === 'reel' 
+                ? '/api/upload/reel'
+                : '/api/upload/video';
             
             const uploadResponse = await fetch(uploadEndpoint, {
                 method: 'POST',
@@ -280,10 +283,10 @@ async function submitPost() {
             if (uploadResponse.ok) {
                 const uploadData = await uploadResponse.json();
                 if (selectedMediaType === 'image') {
-                    imageUrl = uploadData.imageUrl;
+                    imageUrl = uploadData.url;
                     mediaType = 'image';
                 } else {
-                    videoUrl = uploadData.videoUrl;
+                    videoUrl = uploadData.url;
                     mediaType = selectedMediaType === 'reel' ? 'reel' : 'video';
                 }
             } else {
