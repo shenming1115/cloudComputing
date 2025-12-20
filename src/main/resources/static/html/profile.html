@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Social App</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/index.css"> <!-- Reusing navbar/feed styles -->
+    <link rel="stylesheet" href="../css/profile.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+            <a href="index.html" class="nav-brand">SocialApp</a>
+            
+            <div class="nav-links">
+                <a href="index.html" class="nav-item">Home</a>
+                <a href="search.html" class="nav-item">Explore</a>
+                <a href="profile.html" class="nav-item active">Profile</a>
+            </div>
+
+            <div style="display: flex; gap: var(--spacing-md); align-items: center;">
+                <button class="btn btn-primary" onclick="window.location.href='index.html'">New Post</button>
+                <div class="user-avatar" id="navUserAvatar">U</div>
+                <button class="btn btn-secondary" onclick="logout()" style="padding: 4px 12px; font-size: 0.8rem;">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 80px; max-width: 1000px;">
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="cover-photo"></div>
+            <div class="profile-info-container">
+                <div class="profile-avatar-large">U</div>
+                
+                <div class="profile-actions">
+                    <button class="btn btn-secondary" onclick="window.location.href='settings.html'">Settings</button>
+                    <button class="btn btn-secondary" onclick="openEditProfileModal()">Edit Profile</button>
+                </div>
+
+                <div class="profile-details">
+                    <h1 class="profile-name">Current User</h1>
+                    <div class="profile-handle">@user</div>
+                    <p class="profile-bio">Digital minimalist. Cloud computing enthusiast. Coffee lover. ☕️</p>
+                    
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">42</span>
+                            <span class="stat-label">Posts</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">1.2k</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">350</span>
+                            <span class="stat-label">Following</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Content -->
+        <div class="profile-content">
+            <!-- Left Sidebar (About/Photos) -->
+            <div class="left-sidebar">
+                <div class="card sidebar-card">
+                    <h4 class="sidebar-title">About</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                        Joined December 2025
+                    </p>
+                    <div style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
+                        <span style="background: var(--bg-color); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">📍 Malaysia</span>
+                        <span style="background: var(--bg-color); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">💼 Developer</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Feed (User's Posts) -->
+            <div class="feed-container" id="userPostsFeed">
+                <!-- Posts will be injected here -->
+                <div class="text-center" style="padding: 40px; color: var(--text-secondary);">
+                    Loading posts...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%; max-width: 500px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-md);">
+                <h3>Edit Profile</h3>
+                <button onclick="closeEditProfileModal()" style="background: none; font-size: 1.2rem;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Display Name</label>
+                    <input type="text" value="Current User">
+                </div>
+                <div class="input-group">
+                    <label>Bio</label>
+                    <input type="text" value="Digital minimalist. Cloud computing enthusiast. Coffee lover. ☕️">
+                </div>
+                <div class="input-group">
+                    <label>Location</label>
+                    <input type="text" value="Malaysia">
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: var(--spacing-sm);">
+                <button class="btn btn-secondary" onclick="closeEditProfileModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Utils -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/profile.js"></script>
+</body>
+</html>

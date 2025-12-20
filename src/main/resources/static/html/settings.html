@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Social App</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/settings.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+            <a href="index.html" class="nav-brand">SocialApp</a>
+            
+            <div class="nav-links">
+                <a href="index.html" class="nav-item">Home</a>
+                <a href="search.html" class="nav-item">Explore</a>
+                <a href="profile.html" class="nav-item">Profile</a>
+            </div>
+
+            <div style="display: flex; gap: var(--spacing-md); align-items: center;">
+                <button class="btn btn-primary" onclick="window.location.href='index.html'">New Post</button>
+                <div class="user-avatar" id="navUserAvatar">U</div>
+                <button class="btn btn-secondary" onclick="logout()" style="padding: 4px 12px; font-size: 0.8rem;">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="settings-container">
+        <!-- Sidebar Navigation -->
+        <aside class="settings-nav">
+            <div class="settings-nav-item active" onclick="switchSection('account')">Account</div>
+            <div class="settings-nav-item" onclick="switchSection('notifications')">Notifications</div>
+            <div class="settings-nav-item" onclick="switchSection('privacy')">Privacy & Security</div>
+            <div class="settings-nav-item" onclick="switchSection('appearance')">Appearance</div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="settings-content">
+            <!-- Account Section -->
+            <div id="accountSection" class="settings-section active">
+                <h2 class="section-title">Account Settings</h2>
+                
+                <form onsubmit="handleSaveAccount(event)">
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="input-group" value="user@example.com" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="input-group" value="@user" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                        <div class="form-hint">https://socialapp.com/@user</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Language</label>
+                        <select style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: white;">
+                            <option>English (US)</option>
+                            <option>Spanish</option>
+                            <option>French</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+
+                <div class="danger-zone">
+                    <div class="danger-title">Delete Account</div>
+                    <p style="font-size: 0.9rem; margin-bottom: var(--spacing-md);">Once you delete your account, there is no going back. Please be certain.</p>
+                    <button class="btn btn-secondary" style="color: #cc0000; border-color: #ffcccc;">Delete Account</button>
+                </div>
+            </div>
+
+            <!-- Notifications Section -->
+            <div id="notificationsSection" class="settings-section">
+                <h2 class="section-title">Notifications</h2>
+                
+                <div class="setting-item">
+                    <div>
+                        <div class="form-label">Email Notifications</div>
+                        <div class="form-hint">Receive emails about your account activity</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div>
+                        <div class="form-label">New Followers</div>
+                        <div class="form-hint">Notify me when someone follows me</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div>
+                        <div class="form-label">Mentions</div>
+                        <div class="form-hint">Notify me when I'm mentioned in a post</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Privacy Section -->
+            <div id="privacySection" class="settings-section">
+                <h2 class="section-title">Privacy & Security</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Change Password</label>
+                    <input type="password" placeholder="Current Password" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 10px;">
+                    <input type="password" placeholder="New Password" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 10px;">
+                    <input type="password" placeholder="Confirm New Password" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                    <button class="btn btn-secondary" style="margin-top: 10px;">Update Password</button>
+                </div>
+
+                <div class="setting-item">
+                    <div>
+                        <div class="form-label">Private Account</div>
+                        <div class="form-hint">Only people you approve can see your photos and videos</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Appearance Section -->
+            <div id="appearanceSection" class="settings-section">
+                <h2 class="section-title">Appearance</h2>
+                <p>Theme settings coming soon...</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/settings.js"></script>
+</body>
+</html>

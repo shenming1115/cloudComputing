@@ -1,0 +1,66 @@
+/* Comment Section */
+.comments-section {
+    margin-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--spacing-lg);
+}
+
+.comment-input-container {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.comment-input {
+    flex: 1;
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    resize: none;
+    height: 80px;
+    font-family: inherit;
+}
+
+.comment-input:focus {
+    outline: none;
+    border-color: var(--accent-highlight);
+}
+
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.comment-item {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.comment-content {
+    flex: 1;
+    background: var(--bg-color);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+}
+
+.comment-author {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.comment-time {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.comment-text {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}

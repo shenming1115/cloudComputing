@@ -1,0 +1,221 @@
+// DOM Elements
+const postsFeed = document.getElementById('postsFeed');
+const createPostModal = document.getElementById('createPostModal');
+const postContentInput = document.getElementById('postContent');
+const navGuest = document.getElementById('navGuest');
+const navUser = document.getElementById('navUser');
+const navProfileLink = document.getElementById('navProfileLink');
+const heroSection = document.getElementById('heroSection');
+const createPostCard = document.querySelector('.create-post-card');
+
+// State
+let isLoggedIn = false;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    checkLoginStatus();
+    renderPosts();
+});
+
+function checkLoginStatus() {
+    isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    if (isLoggedIn) {
+        navGuest.style.display = 'none';
+        navUser.style.display = 'flex';
+        navProfileLink.style.display = 'flex';
+        heroSection.style.display = 'none';
+        if (createPostCard) createPostCard.style.display = 'flex';
+
+        // Update avatar
+        if (user && user.username) {
+             const avatar = user.username.charAt(0).toUpperCase();
+             document.getElementById('navUserAvatar').textContent = avatar;
+             const widgetAvatar = document.querySelector('.create-post-card .user-avatar');
+             if (widgetAvatar) widgetAvatar.textContent = avatar;
+        }
+    } else {
+        navGuest.style.display = 'flex';
+        navUser.style.display = 'none';
+        navProfileLink.style.display = 'none';
+        heroSection.style.display = 'block';
+        if (createPostCard) createPostCard.style.display = 'none';
+    }
+}
+
+function logout() {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
+    window.location.reload();
+}
+
+// Render Posts
+async function renderPosts() {
+    try {
+        const response = await fetch('/api/posts');
+        if (response.ok) {
+            const posts = await response.json();
+            
+            if (!Array.isArray(posts)) {
+                console.error('Expected array of posts but got:', posts);
+                postsFeed.innerHTML = '<div class="text-center">Invalid data received from server.</div>';
+                return;
+            }
+
+            const formattedPosts = posts.map(post => {
+                const user = post.user || { username: 'Unknown' };
+                return {
+                    id: post.id,
+                    user: { 
+                        name: user.username, 
+                        handle: '@' + user.username, 
+                        avatar: user.username ? user.username.charAt(0).toUpperCase() : '?' 
+                    },
+                    content: post.content,
+                    timestamp: new Date(post.createdAt).toLocaleString(),
+                    likes: 0,
+                    comments: post.comments ? post.comments.length : 0
+                };
+            });
+            
+            if (formattedPosts.length === 0) {
+                postsFeed.innerHTML = '<div class="text-center" style="padding: 40px; color: var(--text-secondary);">No posts yet. Be the first to post!</div>';
+            } else {
+                postsFeed.innerHTML = formattedPosts.map(post => createPostHTML(post)).join('');
+            }
+        } else {
+            console.error('Failed to fetch posts:', response.status, response.statusText);
+            postsFeed.innerHTML = `<div class="text-center">Failed to load posts. Server returned ${response.status} ${response.statusText}</div>`;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        postsFeed.innerHTML = `<div class="text-center">Error loading posts: ${error.message}</div>`;
+    }
+}
+
+function createPostHTML(post) {
+    // 安全地转义用户输入的内容
+    const safeContent = sanitizeContent(post.content);
+    const safeName = escapeHtml(post.user.name);
+    const safeHandle = escapeHtml(post.user.handle);
+    
+    return `
+        <article class="card post-card">
+            <div class="post-header">
+                <div class="user-avatar">${post.user.avatar}</div>
+                <div class="post-info">
+                    <h3>${safeName}</h3>
+                    <span>${safeHandle} · ${post.timestamp}</span>
+                </div>
+            </div>
+            <div class="post-content">
+                ${safeContent}
+            </div>
+            <div class="post-actions">
+                <button class="action-btn" onclick="handleLike(${post.id})">
+                    <span>♥</span> ${post.likes}
+                </button>
+                <button class="action-btn" onclick="handleComment(${post.id})">
+                    <span>💬</span> ${post.comments}
+                </button>
+                <button class="action-btn" onclick="handleShare(${post.id})">
+                    <span>↗</span> Share
+                </button>
+            </div>
+        </article>
+    `;
+}
+
+// Modal Functions
+function openCreatePostModal() {
+    if (!isLoggedIn) {
+        window.location.href = 'login.html';
+        return;
+    }
+    createPostModal.style.display = 'flex';
+}
+
+function closeCreatePostModal() {
+    createPostModal.style.display = 'none';
+    postContentInput.value = '';
+}
+
+// Post Actions
+async function submitPost() {
+    if (!isLoggedIn) {
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    const content = postContentInput.value.trim();
+    if (!content) return;
+
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    try {
+        const response = await fetch('/api/posts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                content: content,
+                userId: user.id,
+                imageUrl: null
+            })
+        });
+
+        if (response.ok) {
+            renderPosts();
+            closeCreatePostModal();
+        } else {
+            const error = await response.json();
+            alert('Failed to create post: ' + (error.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error creating post');
+    }
+}
+
+function handleLike(postId) {
+    if (!isLoggedIn) {
+        window.location.href = 'login.html';
+        return;
+    }
+    alert('Like feature not implemented in backend yet.');
+}
+
+function handleComment(postId) {
+    if (!isLoggedIn) {
+        window.location.href = 'login.html';
+        return;
+    }
+    window.location.href = `post-details.html?id=${postId}`;
+}
+
+function handleShare(postId) {
+    if (!isLoggedIn) {
+        window.location.href = 'login.html';
+        return;
+    }
+    // Call share endpoint
+    fetch(`/api/posts/${postId}/share`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.shareUrl) {
+                prompt("Copy this link to share:", data.shareUrl);
+            } else {
+                alert('Could not generate share link');
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target == createPostModal) {
+        closeCreatePostModal();
+    }
+}
