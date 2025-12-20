@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Social App</title>
+    <title>SocialApp</title>
     <link rel="stylesheet" href="../css/global.css">
     <link rel="stylesheet" href="../css/index.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Navbar -->
     <nav class="navbar">
-        <div class="container" style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+        <div class="container">
             <a href="index.html" class="nav-brand">SocialApp</a>
             
             <div class="nav-links">
@@ -21,41 +20,36 @@
             </div>
 
             <!-- Guest Nav -->
-            <div id="navGuest" style="display: none; gap: var(--spacing-md); align-items: center;">
-                <a href="login.html" class="btn btn-secondary">Login</a>
-                <a href="login.html" class="btn btn-primary">Sign Up</a>
+            <div id="navGuest" style="display: none; gap: var(--spacing-sm); align-items: center;">
+                <a href="login.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;">Login</a>
+                <a href="login.html" class="btn btn-primary" style="font-size: 12px; padding: 4px 12px;">Sign Up</a>
             </div>
 
             <!-- User Nav -->
             <div id="navUser" style="display: none; gap: var(--spacing-md); align-items: center;">
-                <button class="btn btn-primary" onclick="openCreatePostModal()">New Post</button>
-                <div class="user-avatar" id="navUserAvatar">U</div>
-                <button class="btn btn-secondary" onclick="logout()" style="padding: 4px 12px; font-size: 0.8rem;">Logout</button>
+                <button class="btn btn-primary" onclick="openCreatePostModal()" style="font-size: 12px; padding: 4px 12px;">New Post</button>
+                <div class="user-avatar" id="navUserAvatar" style="width: 28px; height: 28px; font-size: 12px;">U</div>
+                <button class="btn btn-secondary" onclick="logout()" style="font-size: 12px; padding: 4px 12px; background: transparent;">Logout</button>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section (Guest Only) -->
     <div id="heroSection" class="hero-section" style="display: none;">
-        <h1 class="hero-title">Welcome to SocialApp</h1>
-        <p class="hero-subtitle">Join our minimalist community to share your thoughts, connect with others, and discover trending topics.</p>
+        <h1 class="hero-title">Connect.<br>Share.<br>Inspire.</h1>
+        <p class="hero-subtitle">A minimalist community designed for clarity and connection.</p>
         <div style="display: flex; gap: var(--spacing-md); justify-content: center;">
-            <a href="login.html" class="btn btn-primary">Get Started</a>
-            <a href="#postsFeed" class="btn btn-secondary">Browse Posts</a>
+            <a href="login.html" class="btn btn-primary" style="padding: 12px 24px; font-size: 17px;">Get Started</a>
+            <a href="#postsFeed" class="btn btn-secondary" style="padding: 12px 24px; font-size: 17px;">Learn more</a>
         </div>
     </div>
 
     <!-- Main Layout -->
     <div class="main-layout">
-        <!-- Left Sidebar (Navigation - Optional for future) -->
-        <div class="left-sidebar">
-            <!-- Placeholder for future navigation menu -->
-        </div>
-
         <!-- Main Feed -->
         <main class="feed-container">
             <!-- Create Post Widget -->
-            <div class="card create-post-card" onclick="openCreatePostModal()">
+            <div class="create-post-card" onclick="openCreatePostModal()">
                 <div class="user-avatar">U</div>
                 <div class="create-post-input">What's on your mind?</div>
             </div>
@@ -63,76 +57,50 @@
             <!-- Posts Feed -->
             <div id="postsFeed">
                 <!-- Posts will be injected here by JS -->
-                <div class="text-center" style="padding: 40px; color: var(--text-secondary);">
+                <div class="text-center" style="padding: 60px; color: var(--text-secondary);">
                     Loading posts...
                 </div>
             </div>
         </main>
-
-        <!-- Right Sidebar -->
-        <aside class="right-sidebar">
-            <div class="card sidebar-card">
-                <h4 class="sidebar-title">Trending Topics</h4>
-                <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
-                    <a href="login.html" class="trending-topic">#Minimalism</a>
-                    <a href="login.html" class="trending-topic">#WebDesign</a>
-                    <a href="login.html" class="trending-topic">#CloudComputing</a>
-                </div>
-            </div>
-
-            <div class="card sidebar-card">
-                <h4 class="sidebar-title">Who to follow</h4>
-                <div style="display: flex; flex-direction: column; gap: var(--spacing-md);">
-                    <!-- Suggestion Item 1 -->
-                    <a href="login.html" class="suggestion-item">
-                        <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">E</div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.9rem; font-weight: 500;">Elon Musk</div>
-                            <div style="font-size: 0.8rem; color: var(--text-secondary);">@elonmusk</div>
-                        </div>
-                        <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem;">Follow</button>
-                    </a>
-
-                    <!-- Suggestion Item 2 -->
-                    <a href="login.html" class="suggestion-item">
-                        <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">B</div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.9rem; font-weight: 500;">Bill Gates</div>
-                            <div style="font-size: 0.8rem; color: var(--text-secondary);">@billgates</div>
-                        </div>
-                        <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem;">Follow</button>
-                    </a>
-
-                    <!-- Suggestion Item 3 -->
-                    <a href="login.html" class="suggestion-item">
-                        <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">T</div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.9rem; font-weight: 500;">Tim Cook</div>
-                            <div style="font-size: 0.8rem; color: var(--text-secondary);">@tim_cook</div>
-                        </div>
-                        <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem;">Follow</button>
-                    </a>
-                </div>
-            </div>
-        </aside>
     </div>
 
-    <!-- Create Post Modal (Hidden by default) -->
-    <div id="createPostModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
-        <div class="card" style="width: 100%; max-width: 500px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-md);">
-                <h3>Create Post</h3>
-                <button onclick="closeCreatePostModal()" style="background: none; font-size: 1.2rem;">&times;</button>
+    <!-- Create Post Modal -->
+    <div id="createPostModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%; max-width: 600px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-lg); align-items: center;">
+                <h3 style="font-size: 24px;">Create Post</h3>
+                <button onclick="closeCreatePostModal()" style="background: none; font-size: 24px; color: var(--text-secondary);">&times;</button>
             </div>
-            <textarea id="postContent" placeholder="What's on your mind?" style="width: 100%; height: 120px; padding: var(--spacing-md); border: 1px solid var(--border-color); border-radius: var(--radius-md); resize: none; margin-bottom: var(--spacing-md); font-family: inherit;"></textarea>
+            <textarea id="postContent" placeholder="What's on your mind?" style="width: 100%; height: 200px; padding: var(--spacing-md); border: none; background: var(--bg-color); border-radius: var(--radius-md); resize: none; margin-bottom: var(--spacing-lg); font-family: inherit; font-size: 18px;"></textarea>
+            
+            <!-- Media Upload Section -->
+            <div style="margin-bottom: var(--spacing-lg);">
+                <label style="display: block; margin-bottom: var(--spacing-sm); font-weight: 500; font-size: 14px; color: var(--text-secondary);">Add Media</label>
+                <div style="display: flex; gap: var(--spacing-md);">
+                    <button class="btn btn-secondary" onclick="document.getElementById('imageInput').click()">
+                        📷 Photo
+                    </button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('videoInput').click()">
+                        🎥 Video
+                    </button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('reelInput').click()">
+                        🎬 Reel
+                    </button>
+                </div>
+                <input type="file" id="imageInput" accept="image/*" style="display: none" onchange="handleFileSelect(this, 'image')">
+                <input type="file" id="videoInput" accept="video/*" style="display: none" onchange="handleFileSelect(this, 'video')">
+                <input type="file" id="reelInput" accept="video/*" style="display: none" onchange="handleFileSelect(this, 'reel')">
+                <div id="selectedFileName" style="margin-top: var(--spacing-sm); font-size: 13px; color: var(--text-secondary);"></div>
+            </div>
+
             <div style="display: flex; justify-content: flex-end;">
-                <button class="btn btn-primary" onclick="submitPost()">Post</button>
+                <button class="btn btn-primary" onclick="submitPost()" style="padding: 12px 32px; font-size: 16px;">Post</button>
             </div>
         </div>
     </div>
 
     <!-- Security Utils -->
     <script src="../js/utils.js"></script>
-    <script src="../js/index.js"></script>
+    <script src="../js/index-new.js"></script>
 </body>
 </html>

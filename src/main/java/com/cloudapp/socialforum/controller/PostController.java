@@ -28,11 +28,22 @@ public class PostController {
 
     @PostMapping
     public ResponseEntity<?> createPost(@Valid @RequestBody CreatePostRequest request) {
-        Post post = postService.createPost(
-            request.getContent(), 
-            request.getImageUrl(), 
-            request.getUserId()
-        );
+        Post post;
+        if (request.getVideoUrl() != null || request.getMediaType() != null) {
+            post = postService.createPost(
+                request.getContent(), 
+                request.getImageUrl(), 
+                request.getVideoUrl(),
+                request.getMediaType(),
+                request.getUserId()
+            );
+        } else {
+            post = postService.createPost(
+                request.getContent(), 
+                request.getImageUrl(), 
+                request.getUserId()
+            );
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(post);
     }
 

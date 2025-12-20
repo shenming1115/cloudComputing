@@ -40,6 +40,30 @@ public class PostService {
         post.setUser(user);
         post.setShareToken(UUID.randomUUID().toString());
         post.setShareCount(0);
+        post.setMediaType(imageUrl != null && !imageUrl.isEmpty() ? "image" : "text");
+
+        Post savedPost = postRepository.save(post);
+        logger.info("Post created successfully with ID: {} and share token: {}", 
+            savedPost.getId(), savedPost.getShareToken());
+        
+        return savedPost;
+    }
+
+    @Transactional
+    public Post createPost(String content, String imageUrl, String videoUrl, String mediaType, Long userId) {
+        logger.info("Creating post for user ID: {} with media type: {}", userId, mediaType);
+        
+        User user = userService.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+
+        Post post = new Post();
+        post.setContent(content);
+        post.setImageUrl(imageUrl);
+        post.setVideoUrl(videoUrl);
+        post.setMediaType(mediaType != null ? mediaType : "text");
+        post.setUser(user);
+        post.setShareToken(UUID.randomUUID().toString());
+        post.setShareCount(0);
 
         Post savedPost = postRepository.save(post);
         logger.info("Post created successfully with ID: {} and share token: {}", 

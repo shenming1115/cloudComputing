@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "comments")
@@ -38,6 +39,7 @@ public class Comment {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        // Set to Malaysia/KL timezone (GMT+8)
+        createdAt = LocalDateTime.now(ZoneId.of("Asia/Kuala_Lumpur"));
     }
 }

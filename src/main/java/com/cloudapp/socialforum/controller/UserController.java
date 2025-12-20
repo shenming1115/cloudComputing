@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -22,12 +23,13 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
-        User user = userService.registerUser(
-            request.getUsername(), 
-            request.getEmail(), 
-            request.getPassword()
-        );
-            
+        try {
+            User user = userService.registerUser(
+                request.getUsername(), 
+                request.getEmail(), 
+                request.getPassword()
+            );
+                
             Map<String, Object> response = new HashMap<>();
             response.put("id", user.getId());
             response.put("username", user.getUsername());
@@ -35,22 +37,41 @@ public class UserController {
             response.put("createdAt", user.getCreatedAt());
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        if (userService.validateUser(request.getUsername(), request.getPassword())) {
-            User user = userService.findByUsername(request.getUsername()).get();
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", user.getId());
-            response.put("username", user.getUsername());
-            response.put("message", "Login successful");
-            
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid credentials"));
+        // Support login with username or email
+        String identifier = request.getUsername();
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Username or email is required"));
         }
+
+        if (userService.validateUser(identifier, request.getPassword())) {
+            Optional<User> userOpt = userService.findByUsername(identifier);
+            if (!userOpt.isPresent()) {
+                userOpt = userService.findByEmail(identifier);
+            }
+            
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                Map<String, Object> response = new HashMap<>();
+                response.put("id", user.getId());
+                response.put("username", user.getUsername());
+                response.put("email", user.getEmail());
+                response.put("message", "Login successful");
+                
+                return ResponseEntity.ok(response);
+            }
+        }
+        
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Invalid credentials"));
     }
 
     @GetMapping("/{id}")
@@ -61,9 +82,17 @@ public class UserController {
                     response.put("id", user.getId());
                     response.put("username", user.getUsername());
                     response.put("email", user.getEmail());
+                    response.put("bio", user.getBio());
+                    response.put("avatarUrl", user.getAvatarUrl());
                     response.put("createdAt", user.getCreatedAt());
                     return ResponseEntity.ok(response);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchUsers(@RequestParam String query) {
+        return ResponseEntity.ok(userService.findByUsername(query));
+    }
 }
+

@@ -19,6 +19,13 @@ public class CreatePostRequest {
     @Size(max = 500, message = "Image URL cannot exceed 500 characters")
     private String imageUrl;
 
+    @Size(max = 500, message = "Video URL cannot exceed 500 characters")
+    private String videoUrl;
+
+    @Size(max = 20, message = "Media type cannot exceed 20 characters")
+    private String mediaType; // "image", "video", "reel", "text"
+
     @NotNull(message = "User ID is required")
     private Long userId;
 }
+

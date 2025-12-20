@@ -3,7 +3,7 @@ spring:
     name: social-forum
 
   datasource:
-    url: jdbc:mysql://social-forum-db-mysql.cbii4gykc5p0.ap-southeast-2.rds.amazonaws.com:3306/social_forum?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://social-forum-db-mysql.cbii4gykc5p0.ap-southeast-2.rds.amazonaws.com:3306/social_forum?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kuala_Lumpur
     username: admin123
     password: pxTUxZPBBmgk3XD
     driver-class-name: com.mysql.cj.jdbc.Driver

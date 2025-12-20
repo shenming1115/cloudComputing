@@ -1,9 +1,12 @@
 spring:
   application:
     name: social-forum
+  
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}  # Use local by default
 
   datasource:
-    url: jdbc:mysql://social-forum-db-mysql.cbii4gykc5p0.ap-southeast-2.rds.amazonaws.com:3306/social_forum?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://social-forum-db-mysql.cbii4gykc5p0.ap-southeast-2.rds.amazonaws.com:3306/social_forum?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kuala_Lumpur
     username: admin123
     password: pxTUxZPBBmgk3XD
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -24,11 +27,18 @@ spring:
       hibernate:
         dialect: ${HIBERNATE_DIALECT:org.hibernate.dialect.MySQLDialect}
         format_sql: true
+        jdbc:
+          time_zone: Asia/Kuala_Lumpur
   
   sql:
     init:
       mode: ${SQL_INIT_MODE:never}  # never 跳过 data.sql（避免 RDS 连接超时导致启动失败）
       continue-on-error: true  # 如果数据已存在，继续执行而不报错
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
 
   lifecycle:
     timeout-per-shutdown-phase: 20s
@@ -45,3 +55,9 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+
+aws:
+  region: ${AWS_REGION:ap-southeast-2}
+  s3:
+    bucket-name: ${AWS_S3_BUCKET:social-forum-media}
+    region: ${AWS_REGION:ap-southeast-2}

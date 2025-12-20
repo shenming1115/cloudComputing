@@ -41,7 +41,7 @@ try {
     $body = @{
         username = "user_$timestamp"
         email = "user_${timestamp}@example.com"
-        password = "SecurePass123"
+        password = "SecurePass123!"
     } | ConvertTo-Json
 
     $response = Invoke-RestMethod -Uri "$baseUrl/api/users/register" -Method POST -ContentType "application/json" -Body $body
@@ -213,7 +213,7 @@ if ($global:username) {
     try {
         $body = @{
             username = $global:username
-            password = "SecurePass123"
+            password = "SecurePass123!"
         } | ConvertTo-Json
 
         $response = Invoke-RestMethod -Uri "$baseUrl/api/users/login" -Method POST -ContentType "application/json" -Body $body
