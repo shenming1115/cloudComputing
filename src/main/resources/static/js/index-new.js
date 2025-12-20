@@ -235,6 +235,18 @@ function closeCreatePostModal() {
 }
 
 // Post Creation with Upload
+let selectedFile = null;
+let selectedMediaType = null;
+
+function handleFileSelect(input, mediaType) {
+    const file = input.files[0];
+    if (file) {
+        selectedFile = file;
+        selectedMediaType = mediaType;
+        document.getElementById('selectedFileName').textContent = `Selected: ${file.name}`;
+    }
+}
+
 async function submitPost() {
     if (!isLoggedIn || !currentUser) {
         window.location.href = 'login.html';
@@ -248,6 +260,40 @@ async function submitPost() {
     }
 
     try {
+        let imageUrl = null;
+        let videoUrl = null;
+        let mediaType = 'text';
+
+        // Upload media file if selected
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('userId', currentUser.id);
+
+            const uploadEndpoint = selectedMediaType === 'image' ? '/api/posts/upload-image' : '/api/posts/upload-video';
+            
+            const uploadResponse = await fetch(uploadEndpoint, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (uploadResponse.ok) {
+                const uploadData = await uploadResponse.json();
+                if (selectedMediaType === 'image') {
+                    imageUrl = uploadData.imageUrl;
+                    mediaType = 'image';
+                } else {
+                    videoUrl = uploadData.videoUrl;
+                    mediaType = selectedMediaType === 'reel' ? 'reel' : 'video';
+                }
+            } else {
+                const error = await uploadResponse.json();
+                alert('Failed to upload media: ' + (error.error || error.message || 'Unknown error'));
+                return;
+            }
+        }
+
+        // Create post with media URLs
         const response = await fetch('/api/posts', {
             method: 'POST',
             headers: {
@@ -256,15 +302,22 @@ async function submitPost() {
             body: JSON.stringify({
                 content: content,
                 userId: currentUser.id,
-                imageUrl: null,
-                videoUrl: null,
-                mediaType: 'text'
+                imageUrl: imageUrl,
+                videoUrl: videoUrl,
+                mediaType: mediaType
             })
         });
 
         if (response.ok) {
             await renderPosts();
             closeCreatePostModal();
+            // Reset file selection
+            selectedFile = null;
+            selectedMediaType = null;
+            document.getElementById('selectedFileName').textContent = '';
+            document.getElementById('imageInput').value = '';
+            document.getElementById('videoInput').value = '';
+            document.getElementById('reelInput').value = '';
         } else {
             const error = await response.json();
             alert('Failed to create post: ' + (error.error || error.message || 'Unknown error'));
