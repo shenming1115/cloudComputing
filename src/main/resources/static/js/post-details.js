@@ -6,6 +6,7 @@ const commentInput = document.getElementById('commentInput');
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
+    updateUserAvatar();
     loadPostDetails();
     loadComments();
 });
@@ -14,6 +15,17 @@ function checkLoginStatus() {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (!isLoggedIn) {
         window.location.href = 'login.html';
+    }
+}
+
+function updateUserAvatar() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.username) {
+        const avatar = user.username.charAt(0).toUpperCase();
+        const avatarElement = document.getElementById('commentUserAvatar');
+        if (avatarElement) {
+            avatarElement.textContent = avatar;
+        }
     }
 }
 
@@ -60,6 +72,17 @@ function renderPost(post) {
     const safeUsername = escapeHtml(user.username);
     const safeContent = sanitizeContent(post.content);
 
+    // Generate media content HTML
+    let mediaHTML = '';
+    if (post.imageUrl) {
+        mediaHTML = `<img src="${escapeHtml(post.imageUrl)}" alt="Post image" style="width: 100%; border-radius: 12px; margin-top: 16px;">`;
+    } else if (post.videoUrl) {
+        mediaHTML = `<video controls style="width: 100%; border-radius: 12px; margin-top: 16px;">
+            <source src="${escapeHtml(post.videoUrl)}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>`;
+    }
+
     postContainer.innerHTML = `
         <article class="card post-card">
             <div class="post-header">
@@ -71,6 +94,7 @@ function renderPost(post) {
             </div>
             <div class="post-content" style="font-size: 1.1rem;">
                 ${safeContent}
+                ${mediaHTML}
             </div>
             <div class="post-actions">
                 <button class="action-btn">
@@ -189,15 +213,6 @@ async function sharePost(postId) {
         alert('Error sharing post');
     }
 }
-    const content = commentInput.value.trim();
-    if (!content) return;
-
-    const newComment = {
-        id: MOCK_COMMENTS.length + 1,
-        user: { name: 'Current User', handle: '@user', avatar: 'U' },
-        content: content,
-        timestamp: 'Just now'
-    };
 
     MOCK_COMMENTS.unshift(newComment);
     loadComments();
