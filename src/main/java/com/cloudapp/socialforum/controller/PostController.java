@@ -1,6 +1,7 @@
 package com.cloudapp.socialforum.controller;
 
 import com.cloudapp.socialforum.dto.CreatePostRequest;
+import com.cloudapp.socialforum.dto.PostDTO;
 import com.cloudapp.socialforum.dto.SharePostResponse;
 import com.cloudapp.socialforum.model.Post;
 import com.cloudapp.socialforum.service.PostService;
@@ -72,14 +73,14 @@ public class PostController {
             
             return ResponseEntity.ok(response);
         } else {
-            List<Post> posts = postService.getAllPosts();
+            List<PostDTO> posts = postService.getAllPostsDTO();
             return ResponseEntity.ok(posts);
         }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getPostById(@PathVariable Long id) {
-        return postService.getPostById(id)
+        return postService.getPostDTOById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

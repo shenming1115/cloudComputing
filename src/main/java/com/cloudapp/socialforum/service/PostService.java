@@ -1,5 +1,6 @@
 package com.cloudapp.socialforum.service;
 
+import com.cloudapp.socialforum.dto.PostDTO;
 import com.cloudapp.socialforum.model.Post;
 import com.cloudapp.socialforum.model.User;
 import com.cloudapp.socialforum.repository.PostRepository;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -76,6 +78,13 @@ public class PostService {
         return postRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    public List<PostDTO> getAllPostsDTO() {
+        return postRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(PostDTO::fromPost)
+                .collect(Collectors.toList());
+    }
+
     public Page<Post> getAllPostsPaginated(Pageable pageable) {
         logger.info("Fetching paginated posts - page: {}, size: {}", 
             pageable.getPageNumber(), pageable.getPageSize());
@@ -84,6 +93,10 @@ public class PostService {
 
     public Optional<Post> getPostById(Long id) {
         return postRepository.findById(id);
+    }
+
+    public Optional<PostDTO> getPostDTOById(Long id) {
+        return postRepository.findById(id).map(PostDTO::fromPost);
     }
 
     public Optional<Post> getPostByShareToken(String shareToken) {

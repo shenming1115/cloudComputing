@@ -44,6 +44,14 @@
     margin-left: auto;
 }
 
+/* Post Media - Limit Height */
+.post-card img, .post-card video {
+    max-height: 400px;
+    object-fit: cover;
+    width: 100%;
+    border-radius: 12px;
+}
+
 /* Comment Section */
 .comments-section {
     margin-top: 60px;

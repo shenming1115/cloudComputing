@@ -1,6 +1,7 @@
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\controller\PostController.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\dto\SharePostResponse.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\repository\CommentRepository.java
+C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\dto\PostDTO.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\service\UserService.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\controller\HealthController.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\controller\UserController.java

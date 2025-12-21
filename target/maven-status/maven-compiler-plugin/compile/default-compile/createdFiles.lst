@@ -27,4 +27,5 @@ com\cloudapp\socialforum\service\PostService.class
 com\cloudapp\socialforum\service\CommentService.class
 com\cloudapp\socialforum\dto\CreateCommentRequest.class
 com\cloudapp\socialforum\model\User.class
+com\cloudapp\socialforum\dto\PostDTO.class
 com\cloudapp\socialforum\controller\HomeController.class

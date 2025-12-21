@@ -74,8 +74,8 @@ async function renderPosts() {
                     },
                     content: post.content,
                     timestamp: new Date(post.createdAt).toLocaleString(),
-                    likes: 0,
-                    comments: post.comments ? post.comments.length : 0
+                    likes: post.likesCount || 0,
+                    comments: post.commentsCount || 0
                 };
             });
             

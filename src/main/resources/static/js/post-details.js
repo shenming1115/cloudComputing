@@ -65,19 +65,19 @@ function renderPost(post) {
     const user = post.user || { username: 'Unknown', id: 0 };
     const avatar = user.username ? user.username.charAt(0).toUpperCase() : '?';
     const timestamp = new Date(post.createdAt).toLocaleString();
-    const likes = 0; // TODO: Implement likes
-    const commentsCount = post.comments ? post.comments.length : 0;
+    const likes = post.likesCount || 0;
+    const commentsCount = post.commentsCount || 0;
 
     // 安全地转义用户输入
     const safeUsername = escapeHtml(user.username);
     const safeContent = sanitizeContent(post.content);
 
-    // Generate media content HTML
+    // Generate media content HTML with height limit
     let mediaHTML = '';
     if (post.imageUrl) {
-        mediaHTML = `<img src="${escapeHtml(post.imageUrl)}" alt="Post image" style="width: 100%; border-radius: 12px; margin-top: 16px;">`;
+        mediaHTML = `<img src="${escapeHtml(post.imageUrl)}" alt="Post image" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 12px; margin-top: 16px;">`;
     } else if (post.videoUrl) {
-        mediaHTML = `<video controls style="width: 100%; border-radius: 12px; margin-top: 16px;">
+        mediaHTML = `<video controls style="width: 100%; max-height: 400px; border-radius: 12px; margin-top: 16px;">
             <source src="${escapeHtml(post.videoUrl)}" type="video/mp4">
             Your browser does not support the video tag.
         </video>`;
@@ -182,8 +182,8 @@ async function submitComment() {
 
         if (response.ok) {
             commentInput.value = '';
-            loadComments(); // Reload comments
-            loadPostDetails(); // Reload post to update comment count
+            await loadComments(); // Reload comments
+            await loadPostDetails(); // Reload post to update comment count
         } else {
             alert('Failed to post comment');
         }
