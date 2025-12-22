@@ -12,6 +12,9 @@ DB_USER=$(aws ssm get-parameter --name "/social-forum/db/username" --query "Para
 DB_PASSWORD=$(aws ssm get-parameter --name "/social-forum/db/password" --with-decryption --query "Parameter.Value" --output text --region ap-southeast-2)
 JWT_SECRET=$(aws ssm get-parameter --name "/social-forum/jwt/secret" --with-decryption --query "Parameter.Value" --output text --region ap-southeast-2)
 S3_BUCKET_NAME=$(aws ssm get-parameter --name "/social-forum/s3/bucket-name" --query "Parameter.Value" --output text --region ap-southeast-2)
+GOOGLE_CLIENT_ID=$(aws ssm get-parameter --name "/social-forum/oauth2/google-client-id" --query "Parameter.Value" --output text --region ap-southeast-2)
+GOOGLE_CLIENT_SECRET=$(aws ssm get-parameter --name "/social-forum/oauth2/google-client-secret" --with-decryption --query "Parameter.Value" --output text --region ap-southeast-2)
+OAUTH2_REDIRECT_URI=$(aws ssm get-parameter --name "/social-forum/oauth2/redirect-uri" --query "Parameter.Value" --output text --region ap-southeast-2)
 
 if [ -z "$DB_URL" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$JWT_SECRET" ] || [ -z "$S3_BUCKET_NAME" ]; then
     echo "Error: Required parameters not found in SSM Parameter Store"
@@ -37,6 +40,9 @@ Environment="DB_USER=${DB_USER}"
 Environment="DB_PASSWORD=${DB_PASSWORD}"
 Environment="JWT_SECRET=${JWT_SECRET}"
 Environment="AWS_S3_BUCKET_NAME=${S3_BUCKET_NAME}"
+Environment="GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
+Environment="GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}"
+Environment="OAUTH2_REDIRECT_URI=${OAUTH2_REDIRECT_URI}"
 Environment="AWS_REGION=ap-southeast-2"
 Environment="SPRING_PROFILES_ACTIVE=prod"
 Environment="DDL_AUTO=update"

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 @Entity
-@Table(name = "users")
+@Table(name = "app_users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

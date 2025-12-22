@@ -6,6 +6,7 @@ import com.cloudapp.socialforum.dto.SharePostResponse;
 import com.cloudapp.socialforum.model.Post;
 import com.cloudapp.socialforum.model.User;
 import com.cloudapp.socialforum.service.PostService;
+import com.cloudapp.socialforum.service.S3Service;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,9 @@ public class PostController {
 
     @Autowired
     private PostService postService;
+
+    @Autowired
+    private S3Service s3Service;
 
     @PostMapping
     public ResponseEntity<?> createPost(@Valid @RequestBody CreatePostRequest request) {
@@ -66,8 +70,13 @@ public class PostController {
             Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
             Page<Post> postsPage = postService.getAllPostsPaginated(pageable);
             
+            // Convert posts to DTOs with pre-signed URLs
+            List<PostDTO> postsWithUrls = postsPage.getContent().stream()
+                    .map(post -> PostDTO.fromPostWithPresignedUrls(post, s3Service))
+                    .collect(java.util.stream.Collectors.toList());
+            
             Map<String, Object> response = new HashMap<>();
-            response.put("posts", postsPage.getContent());
+            response.put("posts", postsWithUrls);
             response.put("currentPage", postsPage.getNumber());
             response.put("totalPages", postsPage.getTotalPages());
             response.put("totalElements", postsPage.getTotalElements());

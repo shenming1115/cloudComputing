@@ -1,5 +1,6 @@
-package com.cloudapp.socialforum.security;
+package com.cloudapp.socialforum.config;
 
+import com.cloudapp.socialforum.security.JwtAuthenticationFilter;
 import com.cloudapp.socialforum.security.OAuth2LoginSuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;

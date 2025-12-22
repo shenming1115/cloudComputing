@@ -6,6 +6,7 @@ com\cloudapp\socialforum\service\UserService.class
 com\cloudapp\socialforum\model\Comment.class
 com\cloudapp\socialforum\service\LikeService.class
 com\cloudapp\socialforum\model\Post.class
+com\cloudapp\socialforum\config\JwtSecurityConfig.class
 com\cloudapp\socialforum\security\JwtTokenProvider.class
 com\cloudapp\socialforum\model\Like.class
 com\cloudapp\socialforum\config\AwsConfig.class
@@ -15,7 +16,6 @@ com\cloudapp\socialforum\config\GlobalExceptionHandler.class
 com\cloudapp\socialforum\controller\AIAssistantController$2.class
 com\cloudapp\socialforum\Application.class
 com\cloudapp\socialforum\controller\CommentController.class
-com\cloudapp\socialforum\config\SecurityConfig.class
 com\cloudapp\socialforum\dto\SharePostResponse.class
 com\cloudapp\socialforum\security\JwtAuthenticationFilter.class
 com\cloudapp\socialforum\repository\CommentRepository.class
@@ -35,7 +35,6 @@ com\cloudapp\socialforum\dto\LoginRequest.class
 com\cloudapp\socialforum\service\PostService.class
 com\cloudapp\socialforum\controller\AIAssistantController.class
 com\cloudapp\socialforum\config\OAuth2Config.class
-com\cloudapp\socialforum\security\JwtSecurityConfig.class
 com\cloudapp\socialforum\service\CommentService.class
 com\cloudapp\socialforum\dto\CreateCommentRequest.class
 com\cloudapp\socialforum\model\User.class

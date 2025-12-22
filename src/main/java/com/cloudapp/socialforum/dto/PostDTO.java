@@ -2,6 +2,7 @@ package com.cloudapp.socialforum.dto;
 
 import com.cloudapp.socialforum.model.Post;
 import com.cloudapp.socialforum.model.User;
+import com.cloudapp.socialforum.service.S3Service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -28,6 +29,10 @@ public class PostDTO {
     private Integer likesCount;
     private LocalDateTime createdAt;
 
+    /**
+     * Convert Post entity to DTO
+     * Note: URLs are S3 keys at this stage, will be converted to pre-signed URLs in service layer
+     */
     public static PostDTO fromPost(Post post) {
         PostDTO dto = new PostDTO();
         dto.setId(post.getId());
@@ -41,6 +46,25 @@ public class PostDTO {
         dto.setCommentsCount(post.getComments() != null ? post.getComments().size() : 0);
         dto.setLikesCount(post.getLikes() != null ? post.getLikes().size() : 0);
         dto.setCreatedAt(post.getCreatedAt());
+        return dto;
+    }
+
+    /**
+     * Convert Post entity to DTO with pre-signed URLs for media access
+     * S3 bucket is PRIVATE, all media access requires temporary pre-signed URLs
+     */
+    public static PostDTO fromPostWithPresignedUrls(Post post, S3Service s3Service) {
+        PostDTO dto = fromPost(post);
+        
+        // Convert S3 keys to pre-signed URLs (valid for 1 hour)
+        if (dto.getImageUrl() != null && !dto.getImageUrl().isEmpty()) {
+            dto.setImageUrl(s3Service.generatePresignedDownloadUrl(dto.getImageUrl()));
+        }
+        
+        if (dto.getVideoUrl() != null && !dto.getVideoUrl().isEmpty()) {
+            dto.setVideoUrl(s3Service.generatePresignedDownloadUrl(dto.getVideoUrl()));
+        }
+        
         return dto;
     }
 }

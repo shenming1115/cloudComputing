@@ -29,6 +29,9 @@ public class PostService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private S3Service s3Service;
+
     @Transactional
     public Post createPost(String content, String imageUrl, Long userId) {
         logger.info("Creating post for user ID: {}", userId);
@@ -81,7 +84,7 @@ public class PostService {
     public List<PostDTO> getAllPostsDTO() {
         return postRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(PostDTO::fromPost)
+                .map(post -> PostDTO.fromPostWithPresignedUrls(post, s3Service))
                 .collect(Collectors.toList());
     }
 
@@ -96,7 +99,8 @@ public class PostService {
     }
 
     public Optional<PostDTO> getPostDTOById(Long id) {
-        return postRepository.findById(id).map(PostDTO::fromPost);
+        return postRepository.findById(id)
+                .map(post -> PostDTO.fromPostWithPresignedUrls(post, s3Service));
     }
 
     public Optional<Post> getPostByShareToken(String shareToken) {

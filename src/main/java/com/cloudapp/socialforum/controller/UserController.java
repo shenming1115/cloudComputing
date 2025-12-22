@@ -5,6 +5,7 @@ import com.cloudapp.socialforum.dto.LoginRequest;
 import com.cloudapp.socialforum.dto.RegisterRequest;
 import com.cloudapp.socialforum.model.User;
 import com.cloudapp.socialforum.security.JwtTokenProvider;
+import com.cloudapp.socialforum.service.S3Service;
 import com.cloudapp.socialforum.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,9 @@ public class UserController {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private S3Service s3Service;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
@@ -99,7 +103,14 @@ public class UserController {
                     Map<String, Object> response = new HashMap<>();
                     response.put("id", user.getId());
                     response.put("username", user.getUsername());
-                    response.put("email", user.getEmail());
+                    
+                    // Generate pre-signed URL for avatar if exists
+                    String avatarUrl = user.getAvatarUrl();
+                    if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                        avatarUrl = s3Service.generatePresignedDownloadUrl(avatarUrl);
+                    }
+                    response.put("avatarUrl", avatarUrl);
+                    
                     response.put("role", user.getRole());
                     response.put("bio", user.getBio());
                     response.put("avatarUrl", user.getAvatarUrl());

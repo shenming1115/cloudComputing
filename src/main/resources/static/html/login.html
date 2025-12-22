@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="../css/login.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <!-- Cloudflare Turnstile -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback&render=explicit" async defer></script>
 </head>
 <body>
     <div class="auth-container">
@@ -34,8 +34,8 @@
                     <input type="password" id="loginPassword" required placeholder="••••••••">
                 </div>
                 
-                <!-- Cloudflare Turnstile Widget -->
-                <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAAAzM4K8CesquZKqN" style="margin: 16px 0;"></div>
+                <!-- Cloudflare Turnstile Widget (使用测试密钥用于本地开发) -->
+                <div id="loginTurnstile" style="margin: 16px 0;"></div>
                 
                 <button type="submit" class="btn btn-primary" style="width: 100%">Sign In</button>
                 
@@ -84,8 +84,8 @@
                     <input type="password" id="registerConfirmPassword" required placeholder="Re-enter your password">
                 </div>
                 
-                <!-- Cloudflare Turnstile Widget -->
-                <div id="registerTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAAAzM4K8CsequZKqN" style="margin: 16px 0;"></div>
+                <!-- Cloudflare Turnstile Widget (使用测试密钥用于本地开发) -->
+                <div id="registerTurnstile" style="margin: 16px 0;"></div>
                 
                 <button type="submit" class="btn btn-primary" style="width: 100%">Create Account</button>
                 
@@ -110,6 +110,6 @@
         </div>
     </div>
 
-    <script src="../js/login-new.js"></script>
+    <script src="../js/login-new.js?v=2"></script>
 </body>
 </html>

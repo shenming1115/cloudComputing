@@ -1,3 +1,51 @@
+let loginWidgetId;
+let registerWidgetId;
+
+// Callback function called by Cloudflare Turnstile script when ready
+window.onloadTurnstileCallback = function() {
+    console.log("Turnstile script loaded, rendering widgets...");
+    
+    // Render Login Widget
+    try {
+        const loginContainer = document.getElementById('loginTurnstile');
+        if (loginContainer) {
+            loginContainer.innerHTML = ''; // Clear previous content
+            loginWidgetId = turnstile.render('#loginTurnstile', {
+                sitekey: '1x00000000000000000000AA',
+                theme: 'light',
+                callback: function(token) {
+                    console.log('Login Turnstile challenge success', token);
+                },
+                'error-callback': function(err) {
+                    console.error('Login Turnstile challenge error', err);
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error rendering login turnstile:', e);
+    }
+
+    // Render Register Widget
+    try {
+        const registerContainer = document.getElementById('registerTurnstile');
+        if (registerContainer) {
+            registerContainer.innerHTML = ''; // Clear previous content
+            registerWidgetId = turnstile.render('#registerTurnstile', {
+                sitekey: '1x00000000000000000000AA',
+                theme: 'light',
+                callback: function(token) {
+                    console.log('Register Turnstile challenge success', token);
+                },
+                'error-callback': function(err) {
+                    console.error('Register Turnstile challenge error', err);
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error rendering register turnstile:', e);
+    }
+};
+
 function switchTab(tab) {
     document.querySelectorAll('.auth-tab').forEach(t => {
         t.classList.remove('active');
@@ -22,7 +70,7 @@ async function handleLogin(event) {
     }
 
     // Get Turnstile token
-    const turnstileToken = turnstile.getResponse(document.querySelector('#loginTurnstile [name="cf-turnstile-response"]'));
+    const turnstileToken = turnstile.getResponse(loginWidgetId);
     if (!turnstileToken) {
         alert('Please complete the security verification (Turnstile)');
         return;
@@ -38,7 +86,7 @@ async function handleLogin(event) {
 
         if (!turnstileVerify.ok) {
             alert('Security verification failed. Please try again.');
-            turnstile.reset();
+            turnstile.reset(loginWidgetId);
             return;
         }
 
@@ -62,12 +110,12 @@ async function handleLogin(event) {
         } else {
             const error = await response.json();
             alert('Login failed: ' + (error.error || error.message || 'Invalid credentials'));
-            turnstile.reset();
+            turnstile.reset(loginWidgetId);
         }
     } catch (error) {
         console.error('Error:', error);
         alert('Network error: ' + error.message);
-        turnstile.reset();
+        turnstile.reset(loginWidgetId);
     }
 }
 
@@ -101,7 +149,7 @@ async function handleRegister(event) {
     }
 
     // Get Turnstile token
-    const turnstileToken = turnstile.getResponse(document.querySelector('#registerTurnstile [name="cf-turnstile-response"]'));
+    const turnstileToken = turnstile.getResponse(registerWidgetId);
     if (!turnstileToken) {
         alert('Please complete the security verification (Turnstile)');
         return;
@@ -117,7 +165,7 @@ async function handleRegister(event) {
 
         if (!turnstileVerify.ok) {
             alert('Security verification failed. Please try again.');
-            turnstile.reset();
+            turnstile.reset(registerWidgetId);
             return;
         }
 
@@ -135,17 +183,22 @@ async function handleRegister(event) {
         } else {
             const error = await response.json();
             alert('Registration failed: ' + (error.error || error.message || 'Please try again'));
-            turnstile.reset();
+            turnstile.reset(registerWidgetId);
         }
     } catch (error) {
         console.error('Error:', error);
         alert('Network error: ' + error.message);
-        turnstile.reset();
+        turnstile.reset(registerWidgetId);
     }
 }
 
 // Handle OAuth callback (when returning from Google login)
 window.addEventListener('DOMContentLoaded', () => {
+    // If Turnstile is already loaded (cached), manually trigger callback
+    if (typeof turnstile !== 'undefined' && typeof loginWidgetId === 'undefined') {
+        window.onloadTurnstileCallback();
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const oauthToken = urlParams.get('oauth_token');
     const username = urlParams.get('username');

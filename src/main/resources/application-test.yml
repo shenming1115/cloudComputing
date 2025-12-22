@@ -41,6 +41,12 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 20s
 
+# AWS S3 Configuration for Testing
+aws:
+  region: ap-southeast-2
+  s3:
+    bucket-name: social-forum-artifacts
+
 server:
   port: 8080
   shutdown: graceful
