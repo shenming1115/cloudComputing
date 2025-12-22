@@ -128,7 +128,7 @@ async function renderPosts() {
 }
 
 function createPostHTML(post) {
-    // 安全地转义用户输入的内容
+    // Safely escape user input content
     const safeContent = sanitizeContent(post.content);
     const safeName = escapeHtml(post.user.name);
     const safeHandle = escapeHtml(post.user.handle);

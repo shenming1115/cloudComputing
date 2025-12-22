@@ -159,6 +159,14 @@ function createPostHTML(post) {
     const likeIcon = post.isLiked ? '❤️' : '🤍';
     const likeClass = post.isLiked ? 'liked' : '';
     
+    // Admin delete button (only show if current user is ADMIN)
+    const isAdmin = currentUser && currentUser.role === 'ADMIN';
+    const deleteButton = isAdmin ? `
+        <button class="action-btn" onclick="handleDeletePost(${post.id})" style="color: var(--accent-red); margin-left: auto;">
+            <span>🗑️</span> Delete
+        </button>
+    ` : '';
+    
     return `
         <article class="card post-card">
             <div class="post-header">
@@ -182,6 +190,7 @@ function createPostHTML(post) {
                 <button class="action-btn" onclick="handleShare(${post.id})">
                     <span>↗</span> Share
                 </button>
+                ${deleteButton}
             </div>
         </article>
     `;
@@ -360,6 +369,48 @@ async function handleShare(postId) {
     } catch (err) {
         console.error(err);
         alert('Failed to generate share link');
+    }
+}
+
+// Admin Delete Post Handler
+async function handleDeletePost(postId) {
+    if (!currentUser || currentUser.role !== 'ADMIN') {
+        alert('Only administrators can delete posts.');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const authToken = localStorage.getItem('authToken') || currentUser.token;
+        
+        const response = await fetch(`/api/posts/${postId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            alert(`Post deleted successfully by ${data.deletedBy}`);
+            // Refresh posts
+            renderPosts();
+        } else if (response.status === 403) {
+            alert('Access denied. Only administrators can delete posts.');
+        } else if (response.status === 401) {
+            alert('Session expired. Please login again.');
+            window.location.href = 'login.html';
+        } else {
+            const error = await response.json();
+            alert('Failed to delete post: ' + (error.error || error.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('Network error: ' + error.message);
     }
 }
 

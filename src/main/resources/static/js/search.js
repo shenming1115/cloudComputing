@@ -118,7 +118,7 @@ function createPostHTML(post) {
     const likes = 0;
     const commentsCount = post.comments ? post.comments.length : 0;
 
-    // 安全地转义用户输入
+    // Safely escape user input
     const safeUsername = escapeHtml(user.username);
     const safeContent = sanitizeContent(post.content);
 

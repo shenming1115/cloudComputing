@@ -73,9 +73,9 @@ public class AIAssistantService {
 
     public AIAssistantService() {
         this.webClient = WebClient.builder().build();
-        this.workerUrl = System.getenv().getOrDefault("CLOUDFLARE_WORKER_URL", 
-            "https://your-worker.your-subdomain.workers.dev/api/chat");
-        this.apiKey = System.getenv("AI_WORKER_API_KEY");
+        this.workerUrl = System.getenv().getOrDefault("AI_WORKER_URL", 
+            "https://social-forum-a1.shenming0387.workers.dev/");
+        this.apiKey = System.getenv("AI_SECRET_KEY");
     }
 
     /**
@@ -97,9 +97,9 @@ public class AIAssistantService {
             .uri(workerUrl)
             .header("Content-Type", "application/json");
 
-        // Add API key if configured
+        // Add X-AI-Secret header if configured (REQUIRED for security)
         if (apiKey != null && !apiKey.isEmpty()) {
-            requestSpec = requestSpec.header("Authorization", "Bearer " + apiKey);
+            requestSpec = requestSpec.header("X-AI-Secret", apiKey);
         }
 
         return requestSpec

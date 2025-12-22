@@ -68,7 +68,7 @@ function renderPost(post) {
     const likes = post.likesCount || 0;
     const commentsCount = post.commentsCount || 0;
 
-    // 安全地转义用户输入
+    // Safely escape user input
     const safeUsername = escapeHtml(user.username);
     const safeContent = sanitizeContent(post.content);
 
@@ -138,7 +138,7 @@ function createCommentHTML(comment) {
     const avatar = user.username ? user.username.charAt(0).toUpperCase() : '?';
     const timestamp = new Date(comment.createdAt).toLocaleString();
 
-    // 安全地转义用户输入
+    // Safely escape user input
     const safeUsername = escapeHtml(user.username);
     const safeContent = sanitizeContent(comment.content);
 

@@ -32,8 +32,8 @@ spring:
   
   sql:
     init:
-      mode: ${SQL_INIT_MODE:never}  # never 跳过 data.sql（避免 RDS 连接超时导致启动失败）
-      continue-on-error: true  # 如果数据已存在，继续执行而不报错
+      mode: ${SQL_INIT_MODE:never}  # never: skip data.sql (avoids startup failure due to RDS connection timeout)
+      continue-on-error: true  # Continue execution even if data already exists
 
   servlet:
     multipart:
