@@ -3,6 +3,7 @@ C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\so
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\security\JwtTokenProvider.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\dto\SharePostResponse.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\repository\CommentRepository.java
+C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\service\TurnstileService.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\dto\PostDTO.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\service\UserService.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\controller\HealthController.java
@@ -27,10 +28,15 @@ C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\so
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\model\Comment.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\controller\LikeController.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\controller\S3Controller.java
+C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\controller\AIAssistantController.java
+C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\security\OAuth2LoginSuccessHandler.java
+C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\controller\TurnstileController.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\config\GlobalExceptionHandler.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\repository\UserRepository.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\service\LikeService.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\dto\CreatePostRequest.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\Application.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\security\JwtAuthenticationFilter.java
+C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\service\AIAssistantService.java
 C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\controller\HomeController.java
+C:\Users\User\Desktop\CS Y2S2\cloud\cloudComputing\src\main\java\com\cloudapp\socialforum\config\OAuth2Config.java

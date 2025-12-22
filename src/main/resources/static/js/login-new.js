@@ -21,7 +21,27 @@ async function handleLogin(event) {
         return;
     }
 
+    // Get Turnstile token
+    const turnstileToken = turnstile.getResponse(document.querySelector('#loginTurnstile [name="cf-turnstile-response"]'));
+    if (!turnstileToken) {
+        alert('Please complete the security verification (Turnstile)');
+        return;
+    }
+
     try {
+        // Verify Turnstile token first
+        const turnstileVerify = await fetch('/api/turnstile/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: turnstileToken })
+        });
+
+        if (!turnstileVerify.ok) {
+            alert('Security verification failed. Please try again.');
+            turnstile.reset();
+            return;
+        }
+
         const response = await fetch('/api/users/login', {
             method: 'POST',
             headers: {
@@ -42,10 +62,12 @@ async function handleLogin(event) {
         } else {
             const error = await response.json();
             alert('Login failed: ' + (error.error || error.message || 'Invalid credentials'));
+            turnstile.reset();
         }
     } catch (error) {
         console.error('Error:', error);
         alert('Network error: ' + error.message);
+        turnstile.reset();
     }
 }
 
@@ -78,7 +100,27 @@ async function handleRegister(event) {
         return;
     }
 
+    // Get Turnstile token
+    const turnstileToken = turnstile.getResponse(document.querySelector('#registerTurnstile [name="cf-turnstile-response"]'));
+    if (!turnstileToken) {
+        alert('Please complete the security verification (Turnstile)');
+        return;
+    }
+
     try {
+        // Verify Turnstile token first
+        const turnstileVerify = await fetch('/api/turnstile/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: turnstileToken })
+        });
+
+        if (!turnstileVerify.ok) {
+            alert('Security verification failed. Please try again.');
+            turnstile.reset();
+            return;
+        }
+
         const response = await fetch('/api/users/register', {
             method: 'POST',
             headers: {
@@ -93,9 +135,31 @@ async function handleRegister(event) {
         } else {
             const error = await response.json();
             alert('Registration failed: ' + (error.error || error.message || 'Please try again'));
+            turnstile.reset();
         }
     } catch (error) {
         console.error('Error:', error);
         alert('Network error: ' + error.message);
+        turnstile.reset();
     }
 }
+
+// Handle OAuth callback (when returning from Google login)
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthToken = urlParams.get('oauth_token');
+    const username = urlParams.get('username');
+    const email = urlParams.get('email');
+    const role = urlParams.get('role');
+
+    if (oauthToken) {
+        // Store OAuth token
+        localStorage.setItem('authToken', oauthToken);
+        localStorage.setItem('userData', JSON.stringify({ username, email, role }));
+        localStorage.setItem('isLoggedIn', 'true');
+        
+        // Clear URL parameters and redirect
+        window.history.replaceState({}, document.title, '/html/index.html');
+        window.location.href = '/html/index.html';
+    }
+});

@@ -191,6 +191,31 @@ button {
     text-decoration: none;
 }
 
+/* AI Boost Button */
+.btn-ai-boost {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-ai-boost:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    text-decoration: none;
+}
+
 /* Cards - Cleaner, less shadow */
 .card {
     background-color: var(--card-bg);

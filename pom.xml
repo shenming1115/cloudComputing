@@ -93,6 +93,18 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- OAuth2 Client for Google Login -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+
+        <!-- WebClient for external API calls (Cloudflare Worker & Turnstile) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
         <!-- AWS SDK for S3 -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

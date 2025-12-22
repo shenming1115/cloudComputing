@@ -1,5 +1,6 @@
 package com.cloudapp.socialforum.security;
 
+import com.cloudapp.socialforum.security.OAuth2LoginSuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -21,8 +22,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Security Configuration with JWT Authentication
- * Replaces basic auth with JWT-based stateless authentication
+ * Security Configuration with JWT Authentication + OAuth2
+ * Replaces basic auth with JWT-based stateless authentication + Google OAuth2
  */
 @Configuration
 @EnableWebSecurity
@@ -31,6 +32,9 @@ public class JwtSecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Autowired
+    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -68,8 +72,11 @@ public class JwtSecurityConfig {
                     "/api/posts/shared/**",
                     "/api/posts/user/**",
                     "/api/search/**",
+                    "/api/turnstile/verify",
                     "/health",
-                    "/actuator/**"
+                    "/actuator/**",
+                    "/oauth2/**",
+                    "/login/oauth2/**"
                 ).permitAll()
                 // Protected endpoints - require authentication
                 .requestMatchers(
@@ -77,11 +84,17 @@ public class JwtSecurityConfig {
                     "/api/comments/**",
                     "/api/likes/**",
                     "/api/upload/**",
-                    "/api/users/{id}"
+                    "/api/users/{id}",
+                    "/api/ai/**"
                 ).authenticated()
                 // Admin-only endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .successHandler(oAuth2LoginSuccessHandler)
+                .loginPage("/html/login.html")
+                .permitAll()
             )
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint((request, response, authException) -> {
