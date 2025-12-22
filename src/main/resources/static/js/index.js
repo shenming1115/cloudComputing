@@ -10,6 +10,7 @@ const createPostCard = document.querySelector('.create-post-card');
 
 // State
 let isLoggedIn = false;
+let currentUser = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,10 +19,26 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkLoginStatus() {
-    isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    
+    // Support legacy storage format
+    const legacyLogin = localStorage.getItem('isLoggedIn') === 'true';
+    const legacyUser = localStorage.getItem('user');
+    
+    if (token && userData) {
+        isLoggedIn = true;
+        currentUser = JSON.parse(userData);
+    } else if (legacyLogin && legacyUser) {
+        // Migrate from legacy format
+        isLoggedIn = true;
+        currentUser = JSON.parse(legacyUser);
+    } else {
+        isLoggedIn = false;
+        currentUser = null;
+    }
 
-    if (isLoggedIn) {
+    if (isLoggedIn && currentUser) {
         navGuest.style.display = 'none';
         navUser.style.display = 'flex';
         navProfileLink.style.display = 'flex';
@@ -29,8 +46,8 @@ function checkLoginStatus() {
         if (createPostCard) createPostCard.style.display = 'flex';
 
         // Update avatar
-        if (user && user.username) {
-             const avatar = user.username.charAt(0).toUpperCase();
+        if (currentUser.username) {
+             const avatar = currentUser.username.charAt(0).toUpperCase();
              document.getElementById('navUserAvatar').textContent = avatar;
              const widgetAvatar = document.querySelector('.create-post-card .user-avatar');
              if (widgetAvatar) widgetAvatar.textContent = avatar;
@@ -45,9 +62,25 @@ function checkLoginStatus() {
 }
 
 function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('user');
     window.location.reload();
+}
+
+// Helper function to get auth headers
+function getAuthHeaders() {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+    }
+    return {
+        'Content-Type': 'application/json'
+    };
 }
 
 // Render Posts
@@ -151,27 +184,29 @@ async function submitPost() {
     const content = postContentInput.value.trim();
     if (!content) return;
 
-    const user = JSON.parse(localStorage.getItem('user'));
-
     try {
         const response = await fetch('/api/posts', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
                 content: content,
-                userId: user.id,
+                userId: currentUser.id,
                 imageUrl: null
             })
         });
+
+        if (response.status === 401) {
+            alert('Session expired. Please login again.');
+            logout();
+            return;
+        }
 
         if (response.ok) {
             renderPosts();
             closeCreatePostModal();
         } else {
             const error = await response.json();
-            alert('Failed to create post: ' + (error.message || 'Unknown error'));
+            alert('Failed to create post: ' + (error.message || error.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error:', error);
@@ -201,8 +236,18 @@ function handleShare(postId) {
         return;
     }
     // Call share endpoint
-    fetch(`/api/posts/${postId}/share`, { method: 'POST' })
-        .then(res => res.json())
+    fetch(`/api/posts/${postId}/share`, { 
+        method: 'POST',
+        headers: getAuthHeaders()
+    })
+        .then(res => {
+            if (res.status === 401) {
+                alert('Session expired. Please login again.');
+                logout();
+                throw new Error('Unauthorized');
+            }
+            return res.json();
+        })
         .then(data => {
             if (data.shareUrl) {
                 prompt("Copy this link to share:", data.shareUrl);

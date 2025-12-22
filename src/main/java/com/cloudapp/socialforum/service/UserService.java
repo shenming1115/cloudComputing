@@ -61,9 +61,10 @@ public class UserService {
         user.setUsername(username);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
+        user.setRole("USER"); // Default role
         
         User savedUser = userRepository.save(user);
-        logger.info("User registered successfully with ID: {}", savedUser.getId());
+        logger.info("User registered successfully with ID: {} and role: {}", savedUser.getId(), savedUser.getRole());
         
         return savedUser;
     }

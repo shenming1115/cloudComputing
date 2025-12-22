@@ -30,19 +30,31 @@ async function handleLogin(event) {
         if (response.ok) {
             if (contentType && contentType.indexOf("application/json") !== -1) {
                 const data = await response.json();
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('user', JSON.stringify(data));
-                window.location.href = 'index.html';
+                
+                // Store JWT token and user data
+                if (data.token) {
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userData', JSON.stringify({
+                        id: data.id,
+                        username: data.username,
+                        email: data.email,
+                        role: data.role
+                    }));
+                    
+                    // Remove legacy keys
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('user');
+                    
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Login failed: No token received');
+                }
             } else {
-                // Fallback if successful but no JSON returned
-                localStorage.setItem('isLoggedIn', 'true');
-                // We might not have user details here, so we might need to fetch them or just redirect
-                window.location.href = 'index.html';
+                alert('Login failed: Invalid response format');
             }
         } else {
             if (contentType && contentType.indexOf("application/json") !== -1) {
                 const error = await response.json();
-                // Check for various error formats
                 const msg = error.message || error.error || 'Unknown error';
                 alert('Login failed: ' + msg);
             } else {
@@ -82,21 +94,39 @@ async function handleRegister(event) {
         const contentType = response.headers.get("content-type");
         
         if (response.ok) {
-            alert('Registration successful! Please login.');
-            switchTab('login');
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const data = await response.json();
+                
+                // Store JWT token and user data (auto-login after registration)
+                if (data.token) {
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userData', JSON.stringify({
+                        id: data.id,
+                        username: data.username,
+                        email: data.email,
+                        role: data.role
+                    }));
+                    
+                    alert('Registration successful! Welcome!');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Registration successful! Please login.');
+                    switchTab('login');
+                }
+            } else {
+                alert('Registration successful! Please login.');
+                switchTab('login');
+            }
         } else {
             if (contentType && contentType.indexOf("application/json") !== -1) {
                 const errorData = await response.json();
                 let errorMessage = 'Registration failed';
                 
                 if (errorData.errors) {
-                    // Validation errors map
                     errorMessage += ':\n' + Object.values(errorData.errors).join('\n');
                 } else if (errorData.message) {
-                    // Custom exception message
                     errorMessage += ': ' + errorData.message;
                 } else if (errorData.error) {
-                    // Standard Spring error
                     errorMessage += ': ' + errorData.error;
                 }
                 

@@ -4,6 +4,7 @@ import com.cloudapp.socialforum.dto.CreatePostRequest;
 import com.cloudapp.socialforum.dto.PostDTO;
 import com.cloudapp.socialforum.dto.SharePostResponse;
 import com.cloudapp.socialforum.model.Post;
+import com.cloudapp.socialforum.model.User;
 import com.cloudapp.socialforum.service.PostService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -14,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -133,13 +136,56 @@ public class PostController {
         return ResponseEntity.ok(posts);
     }
 
+    /**
+     * DELETE /api/posts/{id}
+     * RBAC: Only post owner or ADMIN can delete
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePost(@PathVariable Long id) {
-        if (!postService.getPostById(id).isPresent()) {
+        try {
+            // Get authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Authentication required"));
+            }
+
+            // Get current user from authentication principal
+            User currentUser = (User) authentication.getPrincipal();
+            
+            // Get the post
+            Post post = postService.getPostById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+            
+            // Authorization check: Owner or ADMIN can delete
+            boolean isOwner = post.getUser().getId().equals(currentUser.getId());
+            boolean isAdmin = currentUser.getRole().equals("ADMIN");
+            
+            if (!isOwner && !isAdmin) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                            "error", "Access denied",
+                            "message", "Only the post owner or administrators can delete this post"
+                        ));
+            }
+            
+            // Delete the post
+            postService.deletePost(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Post deleted successfully");
+            response.put("deletedBy", isAdmin ? "ADMIN" : "OWNER");
+            response.put("postId", id);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Post not found with ID: " + id));
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to delete post: " + e.getMessage()));
         }
-        postService.deletePost(id);
-        return ResponseEntity.ok(Map.of("message", "Post deleted successfully"));
     }
 }

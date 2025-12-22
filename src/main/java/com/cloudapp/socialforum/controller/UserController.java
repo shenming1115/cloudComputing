@@ -1,8 +1,10 @@
 package com.cloudapp.socialforum.controller;
 
+import com.cloudapp.socialforum.dto.AuthResponse;
 import com.cloudapp.socialforum.dto.LoginRequest;
 import com.cloudapp.socialforum.dto.RegisterRequest;
 import com.cloudapp.socialforum.model.User;
+import com.cloudapp.socialforum.security.JwtTokenProvider;
 import com.cloudapp.socialforum.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,9 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
         try {
@@ -29,12 +34,18 @@ public class UserController {
                 request.getEmail(), 
                 request.getPassword()
             );
-                
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", user.getId());
-            response.put("username", user.getUsername());
-            response.put("email", user.getEmail());
-            response.put("createdAt", user.getCreatedAt());
+            
+            // Generate JWT token for newly registered user
+            String token = jwtTokenProvider.generateToken(user.getUsername(), user.getRole());
+            
+            AuthResponse response = new AuthResponse(
+                token,
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                "Registration successful"
+            );
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
@@ -60,11 +71,18 @@ public class UserController {
             
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
-                Map<String, Object> response = new HashMap<>();
-                response.put("id", user.getId());
-                response.put("username", user.getUsername());
-                response.put("email", user.getEmail());
-                response.put("message", "Login successful");
+                
+                // Generate JWT token
+                String token = jwtTokenProvider.generateToken(user.getUsername(), user.getRole());
+                
+                AuthResponse response = new AuthResponse(
+                    token,
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getRole(),
+                    "Login successful"
+                );
                 
                 return ResponseEntity.ok(response);
             }
@@ -82,6 +100,7 @@ public class UserController {
                     response.put("id", user.getId());
                     response.put("username", user.getUsername());
                     response.put("email", user.getEmail());
+                    response.put("role", user.getRole());
                     response.put("bio", user.getBio());
                     response.put("avatarUrl", user.getAvatarUrl());
                     response.put("createdAt", user.getCreatedAt());

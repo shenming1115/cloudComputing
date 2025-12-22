@@ -30,6 +30,9 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    @Column(nullable = false, length = 20)
+    private String role = "USER"; // Default role: USER, ADMIN
+
     @Column(name = "bio", length = 500)
     private String bio;
 

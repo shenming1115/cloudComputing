@@ -3,6 +3,7 @@ com\cloudapp\socialforum\service\UserService.class
 com\cloudapp\socialforum\model\Comment.class
 com\cloudapp\socialforum\service\LikeService.class
 com\cloudapp\socialforum\model\Post.class
+com\cloudapp\socialforum\security\JwtTokenProvider.class
 com\cloudapp\socialforum\model\Like.class
 com\cloudapp\socialforum\config\AwsConfig.class
 com\cloudapp\socialforum\controller\HealthController.class
@@ -11,8 +12,11 @@ com\cloudapp\socialforum\Application.class
 com\cloudapp\socialforum\controller\CommentController.class
 com\cloudapp\socialforum\config\SecurityConfig.class
 com\cloudapp\socialforum\dto\SharePostResponse.class
+com\cloudapp\socialforum\security\JwtAuthenticationFilter.class
 com\cloudapp\socialforum\repository\CommentRepository.class
 com\cloudapp\socialforum\controller\SearchController.class
+com\cloudapp\socialforum\dto\AuthResponse.class
+com\cloudapp\socialforum\controller\S3Controller.class
 com\cloudapp\socialforum\repository\UserRepository.class
 com\cloudapp\socialforum\repository\LikeRepository.class
 com\cloudapp\socialforum\repository\PostRepository.class
@@ -24,6 +28,7 @@ com\cloudapp\socialforum\controller\UploadController.class
 com\cloudapp\socialforum\dto\CreatePostRequest.class
 com\cloudapp\socialforum\dto\LoginRequest.class
 com\cloudapp\socialforum\service\PostService.class
+com\cloudapp\socialforum\security\JwtSecurityConfig.class
 com\cloudapp\socialforum\service\CommentService.class
 com\cloudapp\socialforum\dto\CreateCommentRequest.class
 com\cloudapp\socialforum\model\User.class
