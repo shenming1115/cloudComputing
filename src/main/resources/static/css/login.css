@@ -134,3 +134,15 @@
     display: flex;
     justify-content: center;
 }
+
+/* Hide the testing warning banner */
+#loginTurnstile > div > div:first-child,
+#registerTurnstile > div > div:first-child {
+    display: none !important;
+}
+
+/* Alternative: Hide any element with red border (testing indicator) */
+[style*="border: 1px solid red"],
+[style*="border:1px solid red"] {
+    display: none !important;
+}

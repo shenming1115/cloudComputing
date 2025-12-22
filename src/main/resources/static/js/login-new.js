@@ -1,6 +1,49 @@
 let loginWidgetId;
 let registerWidgetId;
 
+// Aggressive function to remove testing banner using MutationObserver
+function removeTestingBanner() {
+    const removeElement = (selector, textMatch) => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+            if (textMatch && el.textContent.includes(textMatch)) {
+                el.remove();
+            } else if (!textMatch) {
+                el.remove();
+            }
+        });
+    };
+
+    // Remove testing banners immediately
+    removeElement('#loginTurnstile > div > div:first-child', 'Testing');
+    removeElement('#registerTurnstile > div > div:first-child', 'Testing');
+    removeElement('[style*="border: 1px solid red"]');
+    removeElement('[style*="border:1px solid red"]');
+
+    // Set up MutationObserver to continuously remove testing banners
+    const observer = new MutationObserver(() => {
+        removeElement('#loginTurnstile > div > div:first-child', 'Testing');
+        removeElement('#registerTurnstile > div > div:first-child', 'Testing');
+        removeElement('[style*="border: 1px solid red"]');
+        removeElement('[style*="border:1px solid red"]');
+    });
+
+    // Observe both containers
+    const loginContainer = document.getElementById('loginTurnstile');
+    const registerContainer = document.getElementById('registerTurnstile');
+    
+    if (loginContainer) {
+        observer.observe(loginContainer, { childList: true, subtree: true });
+    }
+    if (registerContainer) {
+        observer.observe(registerContainer, { childList: true, subtree: true });
+    }
+}
+
+// Start removing banners after a short delay
+setTimeout(removeTestingBanner, 100);
+setInterval(removeTestingBanner, 500); // Keep checking every 500ms
+
 // Callback function called by Cloudflare Turnstile script when ready
 window.onloadTurnstileCallback = function() {
     console.log("Turnstile script loaded, rendering widgets...");
@@ -11,15 +54,17 @@ window.onloadTurnstileCallback = function() {
         if (loginContainer) {
             loginContainer.innerHTML = ''; // Clear previous content
             loginWidgetId = turnstile.render('#loginTurnstile', {
-                sitekey: '1x00000000000000000000AA',
+                sitekey: '0x4AAAAAAC1M1MoqYpHJ_b99',
                 theme: 'light',
                 callback: function(token) {
                     console.log('Login Turnstile challenge success', token);
+                    removeTestingBanner(); // Remove testing banner after success
                 },
                 'error-callback': function(err) {
                     console.error('Login Turnstile challenge error', err);
                 }
             });
+            removeTestingBanner(); // Remove testing banner immediately
         }
     } catch (e) {
         console.error('Error rendering login turnstile:', e);
@@ -31,15 +76,17 @@ window.onloadTurnstileCallback = function() {
         if (registerContainer) {
             registerContainer.innerHTML = ''; // Clear previous content
             registerWidgetId = turnstile.render('#registerTurnstile', {
-                sitekey: '1x00000000000000000000AA',
+                sitekey: '0x4AAAAAAC1M1MoqYpHJ_b99',
                 theme: 'light',
                 callback: function(token) {
                     console.log('Register Turnstile challenge success', token);
+                    removeTestingBanner(); // Remove testing banner after success
                 },
                 'error-callback': function(err) {
                     console.error('Register Turnstile challenge error', err);
                 }
             });
+            removeTestingBanner(); // Remove testing banner immediately
         }
     } catch (e) {
         console.error('Error rendering register turnstile:', e);

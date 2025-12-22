@@ -25,7 +25,7 @@ public class TurnstileService {
 
     public TurnstileService() {
         this.webClient = WebClient.builder().build();
-        this.secretKey = System.getenv().getOrDefault("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA"); // Test key for localhost
+        this.secretKey = System.getenv().getOrDefault("TURNSTILE_SECRET_KEY", "0x4AAAAAAC1M1Gnv0QO3qUj1Vl7wnDwuV_4"); // Production key
     }
 
     /**
@@ -37,17 +37,18 @@ public class TurnstileService {
      */
     public boolean verifyToken(String token, String remoteIp) {
         try {
-            Map<String, String> requestBody = new HashMap<>();
-            requestBody.put("secret", secretKey);
-            requestBody.put("response", token);
-            if (remoteIp != null) {
-                requestBody.put("remoteip", remoteIp);
+            // Build form data - Cloudflare API expects application/x-www-form-urlencoded
+            StringBuilder formData = new StringBuilder();
+            formData.append("secret=").append(secretKey);
+            formData.append("&response=").append(token);
+            if (remoteIp != null && !remoteIp.isEmpty()) {
+                formData.append("&remoteip=").append(remoteIp);
             }
 
             String response = webClient.post()
                 .uri(TURNSTILE_VERIFY_URL)
-                .header("Content-Type", "application/json")
-                .bodyValue(requestBody)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .bodyValue(formData.toString())
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
@@ -67,17 +68,18 @@ public class TurnstileService {
      * Verify Turnstile token asynchronously
      */
     public Mono<Boolean> verifyTokenAsync(String token, String remoteIp) {
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("secret", secretKey);
-        requestBody.put("response", token);
-        if (remoteIp != null) {
-            requestBody.put("remoteip", remoteIp);
+        // Build form data - Cloudflare API expects application/x-www-form-urlencoded
+        StringBuilder formData = new StringBuilder();
+        formData.append("secret=").append(secretKey);
+        formData.append("&response=").append(token);
+        if (remoteIp != null && !remoteIp.isEmpty()) {
+            formData.append("&remoteip=").append(remoteIp);
         }
 
         return webClient.post()
             .uri(TURNSTILE_VERIFY_URL)
-            .header("Content-Type", "application/json")
-            .bodyValue(requestBody)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .bodyValue(formData.toString())
             .retrieve()
             .bodyToMono(String.class)
             .map(response -> {
