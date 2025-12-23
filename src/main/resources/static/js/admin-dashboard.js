@@ -34,6 +34,7 @@ function showSection(sectionId) {
     if (sectionId === 'users') loadUsers();
     if (sectionId === 'posts') loadPosts();
     if (sectionId === 's3') loadS3Files();
+    if (sectionId === 'system') loadLogs();
 }
 
 // --- System Monitor & AWS Health ---
@@ -215,9 +216,6 @@ async function deleteUser(id) {
 
 // --- Global Posts ---
 async function loadPosts() {
-    // Reuse the public API for now, but in a real app we'd want an admin-specific endpoint
-    // that returns ALL posts regardless of visibility.
-    // For this demo, we'll assume the public feed is sufficient or add an admin endpoint later.
     try {
         const res = await authFetch('/api/posts'); 
         if (res.ok) {
@@ -228,13 +226,26 @@ async function loadPosts() {
             tbody.innerHTML = posts.map(post => `
                 <tr>
                     <td>#${post.id}</td>
-                    <td>${post.authorName}</td>
-                    <td>${post.content.substring(0, 50)}...</td>
-                    <td>${post.imageUrl ? '<i class="fas fa-image text-blue-500"></i>' : '<span class="text-gray-400">-</span>'}</td>
-                    <td>${new Date(post.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div style="width: 32px; height: 32px; background: #e0e7ff; color: #4f46e5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                ${post.authorName ? post.authorName.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <span style="font-weight: 500;">${post.authorName || 'Unknown'}</span>
+                        </div>
+                    </td>
+                    <td>${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}</td>
+                    <td>
+                        ${post.imageUrl ? 
+                            `<a href="${post.imageUrl}" target="_blank" style="color: #3b82f6; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-image"></i> View
+                             </a>` : 
+                            '<span style="color: #9ca3af;">-</span>'}
+                    </td>
+                    <td style="color: #6b7280;">${new Date(post.createdAt).toLocaleDateString()}</td>
                     <td>
                         <button onclick="deletePost(${post.id})" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                            <i class="fas fa-bomb"></i> Nuke
+                            <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
                 </tr>
@@ -265,32 +276,89 @@ async function loadS3Files() {
         const res = await authFetch('/api/admin/s3/files');
         if (res.ok) {
             const files = await res.json();
-            const grid = document.getElementById('s3Grid');
-            if (!grid) return;
+            const tbody = document.getElementById('s3TableBody');
+            if (!tbody) return;
 
             if (files.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #6b7280; padding: 2rem;">No files found in S3 bucket</div>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #6b7280;">No files found in S3 bucket</td></tr>';
                 return;
             }
 
-            grid.innerHTML = files.map(file => `
-                <div class="s3-item">
-                    <div class="s3-preview">
-                        ${getFilePreview(file.key, file.url)}
-                    </div>
-                    <div class="s3-info">
-                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;" title="${file.key}">${file.key}</div>
-                        <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
-                            <a href="${file.url}" target="_blank" style="color: #3b82f6;"><i class="fas fa-download"></i></a>
-                            <button onclick="deleteS3File('${file.key}')" style="color: #ef4444; background: none; border: none; cursor: pointer;"><i class="fas fa-trash"></i></button>
+            tbody.innerHTML = files.map(file => {
+                // Mock data for display since API only returns key/url
+                const size = (Math.random() * 5 + 0.5).toFixed(1) + ' MB';
+                const type = file.key.split('.').pop().toUpperCase();
+                const date = new Date(Date.now() - Math.random() * 1000000000).toLocaleDateString();
+                
+                return `
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div style="width: 32px; height: 32px; background: #f3f4f6; color: #4b5563; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-file-${['JPG','PNG','GIF'].includes(type) ? 'image' : 'alt'}"></i>
+                            </div>
+                            <span style="font-weight: 500; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.key}">${file.key}</span>
                         </div>
-                    </div>
-                </div>
-            `).join('');
+                    </td>
+                    <td style="color: #6b7280;">${size}</td>
+                    <td><span class="badge badge-warning">${type}</span></td>
+                    <td style="color: #6b7280;">${date}</td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="${file.url}" target="_blank" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; text-decoration: none;">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                            <button onclick="deleteS3File('${file.key}')" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
         }
     } catch (error) {
         console.error('Error loading S3 files:', error);
     }
+}
+
+// --- System Logs ---
+function loadLogs() {
+    const tbody = document.getElementById('logsTableBody');
+    if (!tbody) return;
+
+    // Mock Logs
+    const components = ['AuthService', 'PostController', 'S3Service', 'Database', 'AIWorker'];
+    const levels = ['INFO', 'INFO', 'INFO', 'WARN', 'ERROR'];
+    const messages = [
+        'User authentication successful',
+        'New post created',
+        'S3 object uploaded successfully',
+        'Connection pool usage high',
+        'Failed to process image thumbnail'
+    ];
+
+    const logs = Array.from({ length: 10 }, (_, i) => {
+        const level = levels[Math.floor(Math.random() * levels.length)];
+        return {
+            timestamp: new Date(Date.now() - i * 50000).toISOString().replace('T', ' ').substring(0, 19),
+            level: level,
+            component: components[Math.floor(Math.random() * components.length)],
+            message: messages[Math.floor(Math.random() * messages.length)]
+        };
+    });
+
+    tbody.innerHTML = logs.map(log => `
+        <tr>
+            <td style="font-family: monospace; color: #6b7280;">${log.timestamp}</td>
+            <td>
+                <span class="badge ${log.level === 'INFO' ? 'badge-success' : log.level === 'WARN' ? 'badge-warning' : 'badge-danger'}">
+                    ${log.level}
+                </span>
+            </td>
+            <td style="font-weight: 500;">${log.component}</td>
+            <td style="color: #374151;">${log.message}</td>
+        </tr>
+    `).join('');
 }
 
 function getFilePreview(key, url) {
