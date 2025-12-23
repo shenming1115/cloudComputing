@@ -26,6 +26,12 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private com.cloudapp.socialforum.repository.PostRepository postRepository;
+    
+    @Autowired
+    private S3Service s3Service;
 
     @Transactional
     public User registerUser(String username, String email, String password) {
@@ -96,5 +102,81 @@ public class UserService {
             return user;
         }
         return userRepository.findByEmail(email);
+    }
+
+    @Transactional
+    public void deleteUser(Long userId) {
+        logger.info("Deleting user with ID: {}", userId);
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("User not found with ID: " + userId);
+        }
+        
+        // ADMIN ABSOLUTE AUTHORITY: Delete all user's media from S3 before deleting user
+        try {
+            var userPosts = postRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            for (var post : userPosts) {
+                // Delete image from S3 if exists
+                if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
+                    try {
+                        String key = extractS3KeyFromUrl(post.getImageUrl());
+                        if (key != null && !key.isEmpty()) {
+                            s3Service.deleteObject(key);
+                            logger.info("Deleted S3 image: {}", key);
+                        }
+                    } catch (Exception e) {
+                        logger.error("Failed to delete S3 image: {}", e.getMessage());
+                    }
+                }
+                
+                // Delete video from S3 if exists
+                if (post.getVideoUrl() != null && !post.getVideoUrl().isEmpty()) {
+                    try {
+                        String key = extractS3KeyFromUrl(post.getVideoUrl());
+                        if (key != null && !key.isEmpty()) {
+                            s3Service.deleteObject(key);
+                            logger.info("Deleted S3 video: {}", key);
+                        }
+                    } catch (Exception e) {
+                        logger.error("Failed to delete S3 video: {}", e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error during S3 cleanup for user {}: {}", userId, e.getMessage());
+        }
+        
+        // JPA CascadeType.ALL on User entity will handle posts, comments, likes in RDS
+        userRepository.deleteById(userId);
+        logger.info("User and all associated data deleted successfully (RDS + S3)");
+    }
+    
+    /**
+     * Extract S3 key from URL for deletion
+     */
+    private String extractS3KeyFromUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return null;
+        }
+        
+        // Handle presigned URLs - strip query parameters
+        String cleanUrl = url.contains("?") ? url.substring(0, url.indexOf("?")) : url;
+        
+        // Extract key from various URL formats
+        if (cleanUrl.contains(".amazonaws.com/")) {
+            int keyStart = cleanUrl.lastIndexOf(".amazonaws.com/") + 15;
+            return cleanUrl.substring(keyStart);
+        } else if (cleanUrl.contains(".cloudfront.net/")) {
+            int keyStart = cleanUrl.lastIndexOf(".cloudfront.net/") + 16;
+            return cleanUrl.substring(keyStart);
+        } else if (cleanUrl.contains("/")) {
+            // Assume it's already a key or path
+            return cleanUrl.substring(cleanUrl.lastIndexOf("/") + 1);
+        }
+        
+        return cleanUrl;
+    }
+
+    public java.util.List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 }

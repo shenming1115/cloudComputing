@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -53,10 +54,12 @@ public class JwtSecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow CORS preflight
                 .requestMatchers(
                     "/",
                     "/index.html",
                     "/login.html",
+                    "/admin-dashboard.html",
                     "/static/**",
                     "/html/**",
                     "/css/**",
@@ -69,6 +72,7 @@ public class JwtSecurityConfig {
                     "/api/posts/shared/**",
                     "/api/posts/user/**",
                     "/api/search/**",
+                    "/api/ai/**",
                     "/health",
                     "/actuator/**"
                 ).permitAll()
@@ -81,8 +85,7 @@ public class JwtSecurityConfig {
                     "/api/comments/**",
                     "/api/likes/**",
                     "/api/upload/**",
-                    "/api/users/{id}",
-                    "/api/ai/**"
+                    "/api/users/{id}"
                 ).authenticated()
                 // DELETE endpoint allows both ADMIN and authenticated users (owner check in controller)
                 .requestMatchers("DELETE", "/api/posts/**").authenticated()
@@ -107,7 +110,7 @@ public class JwtSecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

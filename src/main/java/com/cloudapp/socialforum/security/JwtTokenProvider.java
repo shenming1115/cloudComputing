@@ -22,10 +22,10 @@ public class JwtTokenProvider {
 
     // CRITICAL: Read JWT_SECRET from environment variable for production
     // This ensures consistency between instances and proper security
-    @Value("${JWT_SECRET:${jwt.secret:MyVerySecureAndLongSecretKeyForJWT2024!@#$%^&*()_+1234567890}}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${JWT_EXPIRATION:${jwt.expiration:86400000}}") // 24 hours in milliseconds
+    @Value("${jwt.expiration}") // 24 hours in milliseconds
     private long jwtExpirationMs;
 
     /**

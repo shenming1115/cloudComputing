@@ -61,41 +61,47 @@ public class PostController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "false") boolean paginated) {
         
-        if (paginated) {
-            if (page < 0 || size < 1 || size > 100) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Invalid pagination parameters. Page must be >= 0, size must be between 1 and 100"));
+        try {
+            if (paginated) {
+                if (page < 0 || size < 1 || size > 100) {
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "Invalid pagination parameters. Page must be >= 0, size must be between 1 and 100"));
+                }
+                
+                Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+                Page<Post> postsPage = postService.getAllPostsPaginated(pageable);
+                
+                // Convert posts to DTOs with pre-signed URLs
+                // Filter out posts with null users to prevent NullPointerException
+                List<PostDTO> postsWithUrls = postsPage.getContent().stream()
+                        .filter(post -> post.getUser() != null)
+                        .map(post -> {
+                            try {
+                                return PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                            } catch (Exception e) {
+                                return null;
+                            }
+                        })
+                        .filter(dto -> dto != null)
+                        .collect(java.util.stream.Collectors.toList());
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("posts", postsWithUrls);
+                response.put("currentPage", postsPage.getNumber());
+                response.put("totalPages", postsPage.getTotalPages());
+                response.put("totalElements", postsPage.getTotalElements());
+                response.put("hasNext", postsPage.hasNext());
+                response.put("hasPrevious", postsPage.hasPrevious());
+                
+                return ResponseEntity.ok(response);
+            } else {
+                List<PostDTO> posts = postService.getAllPostsDTO();
+                return ResponseEntity.ok(posts);
             }
-            
-            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-            Page<Post> postsPage = postService.getAllPostsPaginated(pageable);
-            
-            // Convert posts to DTOs with pre-signed URLs
-            // Filter out posts with null users to prevent NullPointerException
-            List<PostDTO> postsWithUrls = postsPage.getContent().stream()
-                    .filter(post -> post.getUser() != null)
-                    .map(post -> {
-                        try {
-                            return PostDTO.fromPostWithPresignedUrls(post, s3Service);
-                        } catch (Exception e) {
-                            return null;
-                        }
-                    })
-                    .filter(dto -> dto != null)
-                    .collect(java.util.stream.Collectors.toList());
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("posts", postsWithUrls);
-            response.put("currentPage", postsPage.getNumber());
-            response.put("totalPages", postsPage.getTotalPages());
-            response.put("totalElements", postsPage.getTotalElements());
-            response.put("hasNext", postsPage.hasNext());
-            response.put("hasPrevious", postsPage.hasPrevious());
-            
-            return ResponseEntity.ok(response);
-        } else {
-            List<PostDTO> posts = postService.getAllPostsDTO();
-            return ResponseEntity.ok(posts);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to load posts: " + e.getMessage()));
         }
     }
 

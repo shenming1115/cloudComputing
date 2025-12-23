@@ -38,28 +38,33 @@ public class AIAssistantController {
      * @return AI-generated content suggestions
      */
     @PostMapping("/boost")
-    public Mono<ResponseEntity<Map<String, Object>>> getAIBoost(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> getAIBoost(@RequestBody Map<String, String> request) {
         String topic = request.get("topic");
         
         if (topic == null || topic.trim().isEmpty()) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "Topic is required");
-            return Mono.just(ResponseEntity.badRequest().body(errorResponse));
+            return ResponseEntity.badRequest().body(errorResponse);
         }
 
-        return aiAssistantService.getContentSuggestions(topic)
-            .map(suggestions -> {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
-                response.put("suggestions", suggestions);
-                response.put("message", "AI suggestions generated successfully");
-                return ResponseEntity.ok(response);
-            })
-            .onErrorReturn(ResponseEntity.status(500).body(new HashMap<String, Object>() {{
-                put("success", false);
-                put("message", "Failed to generate AI suggestions");
-            }}));
+        try {
+            String suggestions = aiAssistantService.getContentSuggestions(topic).block();
+            System.out.println("DEBUG: Got suggestions: " + suggestions);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("suggestions", suggestions);
+            response.put("message", "AI suggestions generated successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error in getAIBoost: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorMap = new HashMap<>();
+            errorMap.put("success", false);
+            errorMap.put("message", "Failed to generate AI suggestions: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorMap);
+        }
     }
 
     /**
@@ -93,10 +98,13 @@ public class AIAssistantController {
                 responseMap.put("message", "AI response generated successfully");
                 return ResponseEntity.ok(responseMap);
             })
-            .onErrorReturn(ResponseEntity.status(500).body(new HashMap<String, Object>() {{
-                put("success", false);
-                put("message", "Failed to get AI response");
-            }}));
+            .onErrorResume(e -> {
+                e.printStackTrace();
+                Map<String, Object> errorMap = new HashMap<>();
+                errorMap.put("success", false);
+                errorMap.put("message", "Failed to get AI response: " + e.getMessage());
+                return Mono.just(ResponseEntity.status(500).body(errorMap));
+            });
     }
 
     /**

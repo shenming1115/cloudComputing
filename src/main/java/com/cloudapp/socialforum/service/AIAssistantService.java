@@ -77,7 +77,13 @@ public class AIAssistantService {
         this.webClient = WebClient.builder().build();
         this.workerUrl = System.getenv().getOrDefault("AI_WORKER_URL", 
             "https://social-forum-a1.shenming0387.workers.dev/");
-        this.apiKey = System.getenv("AI_SECRET_KEY");
+        this.apiKey = null; // No longer using API key - Demo Mode
+        
+        // Debug logging
+        System.out.println("=== AI Service Initialized (Demo Mode) ===");
+        System.out.println("Worker URL: " + this.workerUrl);
+        System.out.println("Demo Mode: No authentication required");
+        System.out.println("==========================================");
     }
 
     /**
@@ -88,23 +94,14 @@ public class AIAssistantService {
      * @return AI response text
      */
     public Mono<String> getAIResponse(String userMessage, String username) {
+        // Demo Mode: Simple JSON with only userMessage field
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("systemPrompt", SYSTEM_PROMPT);
         requestBody.put("userMessage", userMessage);
-        if (username != null) {
-            requestBody.put("context", Map.of("username", username));
-        }
 
-        var requestSpec = webClient.post()
+        // No authentication headers - Demo Mode
+        return webClient.post()
             .uri(workerUrl)
-            .header("Content-Type", "application/json");
-
-        // Add X-AI-Secret header if configured (REQUIRED for security)
-        if (apiKey != null && !apiKey.isEmpty()) {
-            requestSpec = requestSpec.header("X-AI-Secret", apiKey);
-        }
-
-        return requestSpec
+            .header("Content-Type", "application/json")
             .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(String.class)
@@ -118,6 +115,11 @@ public class AIAssistantService {
                 } catch (Exception e) {
                     return response; // Return raw response if JSON parsing fails
                 }
+            })
+            .doOnError(error -> {
+                System.err.println("AI Worker Error: " + error.getClass().getName());
+                System.err.println("Error Message: " + error.getMessage());
+                error.printStackTrace();
             })
             .onErrorReturn("Sorry, the AI assistant is temporarily unavailable. Please try again later.");
     }

@@ -43,6 +43,9 @@ public class S3Service {
     @Value("${aws.s3.region:ap-southeast-2}")
     private String region;
 
+    @Value("${aws.cloudfront.domain:}")
+    private String cloudfrontDomain;
+
     /**
      * Generate pre-signed URL for uploading a file (PUT)
      * Valid for 15 minutes
@@ -72,11 +75,20 @@ public class S3Service {
     }
 
     /**
-     * Generate pre-signed URL for downloading/viewing a file (GET)
-     * Valid for 1 hour
+     * Generate URL for downloading/viewing a file (GET)
+     * Uses CloudFront for CDN delivery
      */
     public String generatePresignedDownloadUrl(String s3Key) {
-        logger.info("Generating pre-signed download URL for: {}", s3Key);
+        if (cloudfrontDomain != null && !cloudfrontDomain.isEmpty()) {
+            // Ensure domain doesn't have protocol
+            String domain = cloudfrontDomain.replace("https://", "").replace("http://", "");
+            // Remove leading slash from key if present
+            String key = s3Key.startsWith("/") ? s3Key.substring(1) : s3Key;
+            return "https://" + domain + "/" + key;
+        }
+        
+        // Fallback to S3 pre-signed URL if CloudFront is not configured
+        logger.info("CloudFront domain not set, generating S3 pre-signed download URL for: {}", s3Key);
 
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
@@ -174,5 +186,45 @@ public class S3Service {
 
     public String uploadReel(MultipartFile file) throws IOException {
         return uploadFile(file, "reels");
+    }
+
+    /**
+     * List objects in the S3 bucket
+     */
+    public java.util.List<String> listObjects() {
+        try {
+            software.amazon.awssdk.services.s3.model.ListObjectsV2Request request = 
+                software.amazon.awssdk.services.s3.model.ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .build();
+            
+            software.amazon.awssdk.services.s3.model.ListObjectsV2Response response = s3Client.listObjectsV2(request);
+            
+            return response.contents().stream()
+                    .map(software.amazon.awssdk.services.s3.model.S3Object::key)
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Failed to list objects in S3: {}", e.getMessage());
+            return java.util.Collections.emptyList();
+        }
+    }
+
+    /**
+     * Delete object from S3 bucket
+     */
+    public void deleteObject(String key) {
+        try {
+            software.amazon.awssdk.services.s3.model.DeleteObjectRequest request = 
+                software.amazon.awssdk.services.s3.model.DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .build();
+            
+            s3Client.deleteObject(request);
+            logger.info("Deleted object from S3: {}", key);
+        } catch (Exception e) {
+            logger.error("Failed to delete object from S3: {}", e.getMessage());
+            throw new RuntimeException("Failed to delete object from S3: " + e.getMessage());
+        }
     }
 }

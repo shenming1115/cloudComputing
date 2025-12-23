@@ -78,27 +78,43 @@ public class PostService {
     }
 
     public List<Post> getAllPosts() {
-        List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
-        // Filter out posts with null users (orphaned posts)
-        return posts.stream()
-                .filter(post -> post.getUser() != null)
-                .collect(Collectors.toList());
+        try {
+            List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
+            if (posts == null) {
+                return java.util.Collections.emptyList();
+            }
+            // Filter out posts with null users (orphaned posts)
+            return posts.stream()
+                    .filter(post -> post != null && post.getUser() != null)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error fetching all posts: {}", e.getMessage());
+            return java.util.Collections.emptyList();
+        }
     }
 
     public List<PostDTO> getAllPostsDTO() {
-        return postRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .filter(post -> post.getUser() != null) // Filter out orphaned posts
-                .map(post -> {
-                    try {
-                        return PostDTO.fromPostWithPresignedUrls(post, s3Service);
-                    } catch (Exception e) {
-                        logger.error("Error converting post {} to DTO: {}", post.getId(), e.getMessage());
-                        return null;
-                    }
-                })
-                .filter(dto -> dto != null)
-                .collect(Collectors.toList());
+        try {
+            List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
+            if (posts == null) {
+                return java.util.Collections.emptyList();
+            }
+            return posts.stream()
+                    .filter(post -> post != null && post.getUser() != null) // Filter out orphaned posts
+                    .map(post -> {
+                        try {
+                            return PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                        } catch (Exception e) {
+                            logger.error("Error converting post {} to DTO: {}", post.getId(), e.getMessage());
+                            return null;
+                        }
+                    })
+                    .filter(dto -> dto != null)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error fetching all posts DTO: {}", e.getMessage());
+            return java.util.Collections.emptyList();
+        }
     }
 
     public Page<Post> getAllPostsPaginated(Pageable pageable) {
@@ -162,6 +178,66 @@ public class PostService {
     @Transactional
     public void deletePost(Long id) {
         logger.info("Deleting post with ID: {}", id);
+        
+        // ADMIN ABSOLUTE AUTHORITY: Delete media from S3 before deleting post from RDS
+        Optional<Post> postOpt = postRepository.findById(id);
+        if (postOpt.isPresent()) {
+            Post post = postOpt.get();
+            
+            // Delete image from S3 if exists
+            if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
+                try {
+                    String key = extractS3KeyFromUrl(post.getImageUrl());
+                    if (key != null && !key.isEmpty()) {
+                        s3Service.deleteObject(key);
+                        logger.info("Deleted S3 image: {}", key);
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to delete S3 image: {}", e.getMessage());
+                }
+            }
+            
+            // Delete video from S3 if exists
+            if (post.getVideoUrl() != null && !post.getVideoUrl().isEmpty()) {
+                try {
+                    String key = extractS3KeyFromUrl(post.getVideoUrl());
+                    if (key != null && !key.isEmpty()) {
+                        s3Service.deleteObject(key);
+                        logger.info("Deleted S3 video: {}", key);
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to delete S3 video: {}", e.getMessage());
+                }
+            }
+        }
+        
         postRepository.deleteById(id);
+        logger.info("Post and associated media deleted successfully (RDS + S3)");
+    }
+    
+    /**
+     * Extract S3 key from URL for deletion
+     */
+    private String extractS3KeyFromUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return null;
+        }
+        
+        // Handle presigned URLs - strip query parameters
+        String cleanUrl = url.contains("?") ? url.substring(0, url.indexOf("?")) : url;
+        
+        // Extract key from various URL formats
+        if (cleanUrl.contains(".amazonaws.com/")) {
+            int keyStart = cleanUrl.lastIndexOf(".amazonaws.com/") + 15;
+            return cleanUrl.substring(keyStart);
+        } else if (cleanUrl.contains(".cloudfront.net/")) {
+            int keyStart = cleanUrl.lastIndexOf(".cloudfront.net/") + 16;
+            return cleanUrl.substring(keyStart);
+        } else if (cleanUrl.contains("/")) {
+            // Assume it's already a key or path
+            return cleanUrl.substring(cleanUrl.lastIndexOf("/") + 1);
+        }
+        
+        return cleanUrl;
     }
 }

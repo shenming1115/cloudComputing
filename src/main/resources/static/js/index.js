@@ -49,6 +49,20 @@ function checkLoginStatus() {
         heroSection.style.display = 'none';
         if (createPostCard) createPostCard.style.display = 'flex';
 
+        // Admin Dashboard Link
+        if (currentUser.role === 'ADMIN') {
+            if (!document.getElementById('adminDashboardLink')) {
+                const adminLink = document.createElement('a');
+                adminLink.id = 'adminDashboardLink';
+                adminLink.href = '/html/admin-dashboard.html';
+                adminLink.className = 'nav-item';
+                adminLink.innerHTML = '<i class="fas fa-shield-alt"></i> Admin';
+                adminLink.style.marginRight = '1rem';
+                adminLink.style.color = '#ef4444'; // Red color to stand out
+                navUser.insertBefore(adminLink, navUser.firstChild);
+            }
+        }
+
         // Update avatar and show role badge
         if (currentUser.username) {
              const avatar = currentUser.username.charAt(0).toUpperCase();
@@ -260,6 +274,7 @@ async function renderPosts() {
                 const user = post.user || { username: 'Unknown' };
                 return {
                     id: post.id,
+                    userId: user.id, // Add userId for ownership check
                     user: { 
                         name: user.username, 
                         handle: '@' + user.username, 
@@ -300,14 +315,30 @@ function createPostHTML(post) {
         '<span style="background: #e74c3c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; margin-left: 6px;">ADMIN</span>' : 
         '';
     
+    // Add delete button if admin or owner
+    let deleteButton = '';
+    if (isLoggedIn && currentUser) {
+        const isAdmin = currentUser.role === 'ADMIN';
+        const isOwner = currentUser.id === post.userId;
+        
+        if (isAdmin || isOwner) {
+            deleteButton = `
+                <button class="action-btn delete-btn" onclick="deletePost(${post.id})" style="color: #e74c3c; margin-left: auto;">
+                    <span>🗑️</span> Delete
+                </button>
+            `;
+        }
+    }
+    
     return `
-        <article class="card post-card">
+        <article class="card post-card" id="post-${post.id}">
             <div class="post-header">
                 <div class="user-avatar">${post.user.avatar}</div>
                 <div class="post-info">
                     <h3>${safeName}${roleBadge}</h3>
                     <span>${safeHandle} · ${post.timestamp}</span>
                 </div>
+                ${deleteButton}
             </div>
             <div class="post-content">
                 ${safeContent}
@@ -409,6 +440,36 @@ function handleShare(postId) {
     })
         .then(res => {
             if (res.status === 401) {
+function deletePost(postId) {
+    if (!confirm('Are you sure you want to delete this post?')) {
+        return;
+    }
+
+    fetch(`/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+    })
+    .then(response => {
+        if (response.ok) {
+            // Remove post from UI
+            const postElement = document.getElementById(`post-${postId}`);
+            if (postElement) {
+                postElement.remove();
+            } else {
+                renderPosts(); // Fallback
+            }
+        } else {
+            return response.json().then(err => {
+                throw new Error(err.message || 'Failed to delete post');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting post:', error);
+        alert('Failed to delete post: ' + error.message);
+    });
+}
+
                 alert('Session expired. Please login again.');
                 logout();
                 throw new Error('Unauthorized');

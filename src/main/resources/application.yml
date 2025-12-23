@@ -20,19 +20,19 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${DDL_AUTO:update}
-    show-sql: ${SHOW_SQL:false}
+      ddl-auto: update
+    show-sql: false
     open-in-view: false
     properties:
       hibernate:
-        dialect: ${HIBERNATE_DIALECT:org.hibernate.dialect.MySQLDialect}
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
         jdbc:
           time_zone: Asia/Kuala_Lumpur
   
   sql:
     init:
-      mode: ${SQL_INIT_MODE:never}  # never: skip data.sql (avoids startup failure due to RDS connection timeout)
+      mode: never  # never: skip data.sql (avoids startup failure due to RDS connection timeout)
       continue-on-error: true  # Continue execution even if data already exists
 
   servlet:
@@ -44,8 +44,12 @@ spring:
     timeout-per-shutdown-phase: 20s
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
   shutdown: graceful
+
+jwt:
+  expiration: 86400000 # 24 hours
+  secret: ${JWT_SECRET:defaultSecretKeyMustBeLongEnoughForHS256Algorithm}
 
 management:
   endpoints:
@@ -57,7 +61,13 @@ management:
       show-details: when-authorized
 
 aws:
-  region: ${AWS_REGION:ap-southeast-2}
+  region: ap-southeast-2
   s3:
-    bucket-name: ${AWS_S3_BUCKET:social-forum-artifacts}
-    region: ${AWS_REGION:ap-southeast-2}
+    bucket-name: social-forum-artifacts
+    region: ap-southeast-2
+  cloudfront:
+    domain: ${CLOUDFRONT_DOMAIN:d12345678.cloudfront.net}
+
+turnstile:
+  site-key: 0x4AAAAAAACIM1MoqYpHJ_b99
+  secret-key: 0x4AAAAAAACIM1Gnv0QO3qUj1V17wnDwuV_4

@@ -36,26 +36,33 @@ public class AdminUserInitializer {
             String adminEmail = "admin@socialforum.com";
 
             // Check if admin user already exists
-            if (userRepository.findByUsername(adminUsername).isPresent()) {
-                logger.info("Admin user '{}' already exists. Skipping initialization.", adminUsername);
+            User admin = userRepository.findByUsername(adminUsername).orElse(new User());
+            
+            boolean isNew = admin.getId() == null;
+            
+            if (!isNew && "ADMIN".equals(admin.getRole())) {
+                logger.info("Admin user '{}' already exists and has correct role. Skipping initialization.", adminUsername);
                 return;
             }
 
-            // Create admin user
-            User admin = new User();
+            // Create or Update admin user
             admin.setUsername(adminUsername);
             admin.setEmail(adminEmail);
+            // Only update password if it's a new user or explicitly requested (here we enforce it)
             admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setRole("ADMIN");
-            admin.setBio("System Administrator");
-            admin.setCreatedAt(LocalDateTime.now(ZoneId.of("Asia/Kuala_Lumpur")));
+            if (admin.getBio() == null) {
+                admin.setBio("System Administrator");
+            }
+            if (admin.getCreatedAt() == null) {
+                admin.setCreatedAt(LocalDateTime.now(ZoneId.of("Asia/Kuala_Lumpur")));
+            }
 
             userRepository.save(admin);
 
             logger.info("========================================");
-            logger.info("ADMIN USER CREATED SUCCESSFULLY");
+            logger.info("ADMIN USER {} SUCCESSFULLY", isNew ? "CREATED" : "UPDATED");
             logger.info("Username: {}", adminUsername);
-            logger.info("Password: {}", adminPassword);
             logger.info("Role: ADMIN");
             logger.info("========================================");
         };

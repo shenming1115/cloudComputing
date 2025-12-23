@@ -41,3 +41,6 @@ management:
   endpoint:
     health:
       show-details: always
+
+jwt:
+  expiration: 86400000 # 24 hours

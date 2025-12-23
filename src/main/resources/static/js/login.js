@@ -45,7 +45,12 @@ async function handleLogin(event) {
                     localStorage.removeItem('isLoggedIn');
                     localStorage.removeItem('user');
                     
-                    window.location.href = 'index.html';
+                    // Redirect based on role or username
+                    if (data.role === 'ADMIN' || data.username === 'admin123') {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
                 } else {
                     alert('Login failed: No token received');
                 }
