@@ -57,13 +57,10 @@ public class AIAssistantService {
         - Access to media files requires temporary pre-signed URLs (15 min for upload, 1 hour for view)
         - No public access to any user data without proper authentication
         - JWT-based authentication ensures stateless security
-        - OAuth2 integration with Google for seamless login
-        
         Security Features:
         - BCrypt password hashing with salt (strength 12)
         - JWT tokens with HS256 algorithm (24-hour expiration)
         - Role-Based Access Control (USER/ADMIN roles)
-        - Cloudflare Turnstile bot protection
         - S3 pre-signed URLs for private bucket access
         
         Your Role:

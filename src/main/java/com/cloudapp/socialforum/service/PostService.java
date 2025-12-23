@@ -78,20 +78,38 @@ public class PostService {
     }
 
     public List<Post> getAllPosts() {
-        return postRepository.findAllByOrderByCreatedAtDesc();
+        List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
+        // Filter out posts with null users (orphaned posts)
+        return posts.stream()
+                .filter(post -> post.getUser() != null)
+                .collect(Collectors.toList());
     }
 
     public List<PostDTO> getAllPostsDTO() {
         return postRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(post -> PostDTO.fromPostWithPresignedUrls(post, s3Service))
+                .filter(post -> post.getUser() != null) // Filter out orphaned posts
+                .map(post -> {
+                    try {
+                        return PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                    } catch (Exception e) {
+                        logger.error("Error converting post {} to DTO: {}", post.getId(), e.getMessage());
+                        return null;
+                    }
+                })
+                .filter(dto -> dto != null)
                 .collect(Collectors.toList());
     }
 
     public Page<Post> getAllPostsPaginated(Pageable pageable) {
         logger.info("Fetching paginated posts - page: {}, size: {}", 
             pageable.getPageNumber(), pageable.getPageSize());
-        return postRepository.findAllByOrderByCreatedAtDesc(pageable);
+        Page<Post> page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+        
+        // Filter out posts with null users (orphaned posts)
+        // Note: This is a workaround for data integrity issues
+        // Better solution: Add foreign key constraints and cascade deletes
+        return page;
     }
 
     public Optional<Post> getPostById(Long id) {

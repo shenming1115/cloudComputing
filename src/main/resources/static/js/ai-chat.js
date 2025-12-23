@@ -146,16 +146,18 @@ class AIChatAssistant {
         // Show typing indicator
         this.showTypingIndicator();
 
-        // Get JWT token
-        const token = localStorage.getItem('token');
+        // Get JWT token - REQUIRED for AI chat
+        const token = localStorage.getItem('authToken');
+        
+        // Check if user is logged in
         if (!token) {
             this.hideTypingIndicator();
-            this.addMessage('Please log in to use the AI assistant.', 'assistant');
+            this.addMessage('请先登录才能使用AI助手。Please log in first to use the AI assistant.', 'assistant');
             return;
         }
 
         try {
-            // Call AI API
+            // Call AI API with authentication
             const response = await fetch('/api/ai/chat', {
                 method: 'POST',
                 headers: {

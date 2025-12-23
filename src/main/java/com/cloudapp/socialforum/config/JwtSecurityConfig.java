@@ -1,7 +1,6 @@
 package com.cloudapp.socialforum.config;
 
 import com.cloudapp.socialforum.security.JwtAuthenticationFilter;
-import com.cloudapp.socialforum.security.OAuth2LoginSuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +22,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Security Configuration with JWT Authentication + OAuth2
- * Replaces basic auth with JWT-based stateless authentication + Google OAuth2
+ * Security Configuration with JWT Authentication
+ * JWT-based stateless authentication
  */
 @Configuration
 @EnableWebSecurity
@@ -33,9 +32,6 @@ public class JwtSecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @Autowired
-    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -73,29 +69,24 @@ public class JwtSecurityConfig {
                     "/api/posts/shared/**",
                     "/api/posts/user/**",
                     "/api/search/**",
-                    "/api/turnstile/verify",
                     "/health",
-                    "/actuator/**",
-                    "/oauth2/**",
-                    "/login/oauth2/**"
+                    "/actuator/**"
                 ).permitAll()
+                // Admin-only endpoints (explicit)
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Protected endpoints - require authentication
                 .requestMatchers(
                     "/api/posts/create",
+                    "/api/posts/*/share",
                     "/api/comments/**",
                     "/api/likes/**",
                     "/api/upload/**",
                     "/api/users/{id}",
                     "/api/ai/**"
                 ).authenticated()
-                // Admin-only endpoints
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // DELETE endpoint allows both ADMIN and authenticated users (owner check in controller)
+                .requestMatchers("DELETE", "/api/posts/**").authenticated()
                 .anyRequest().authenticated()
-            )
-            .oauth2Login(oauth2 -> oauth2
-                .successHandler(oAuth2LoginSuccessHandler)
-                .loginPage("/html/login.html")
-                .permitAll()
             )
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint((request, response, authException) -> {

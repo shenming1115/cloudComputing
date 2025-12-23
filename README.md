@@ -1,9 +1,9 @@
 # SocialApp - Production-Ready Social Forum Platform
 
-> **Version**: 3.0  
+> **Version**: 4.0  
 > **Platform**: Spring Boot 3.2.0 + Java 17  
 > **Cloud**: AWS (EC2, RDS MySQL, S3, CloudFront, ALB)  
-> **Security**: JWT, BCrypt, Google OAuth 2.0, Cloudflare Turnstile  
+> **Security**: JWT, BCrypt, Admin RBAC  
 > **AI**: Cloudflare Workers AI Integration
 
 ---
@@ -1024,34 +1024,49 @@ Application health check.
 
 2. **JWT Authentication**
    - HS256 algorithm
-   - 64-character secret key
+   - 64-character secret key from environment variable (JWT_SECRET)
    - 24-hour token expiration
    - Stateless sessions
+   - Automatic admin user provisioning (admin123 / pxTUxZPBBmgk3XD)
 
-3. **OAuth 2.0**
-   - Google social login
-   - Automatic user provisioning
-   - Secure token exchange
+3. **RBAC (Role-Based Access Control)**
+   - USER: Standard permissions (can delete own posts)
+   - ADMIN: Full permissions (can delete any post)
+   - Admin badge visible in UI
+   - Method-level security with proper authorization checks
 
 4. **Bot Protection**
-   - Cloudflare Turnstile on login/register
-   - Challenge-response verification
-   - Rate limiting
+   - Removed Turnstile (simplified authentication)
 
-5. **RBAC (Role-Based Access Control)**
-   - USER: Standard permissions
-   - ADMIN: Delete posts, manage users
-   - Method-level security with `@PreAuthorize`
-
-6. **CORS Configuration**
+5. **CORS Configuration**
    - Allowed origins configured
    - Credentials support
    - Method whitelist
 
-7. **Security Headers**
+6. **Security Headers**
    - X-Frame-Options: DENY
    - X-Content-Type-Options: nosniff
    - X-XSS-Protection: 1; mode=block
+
+7. **Data Integrity**
+   - Null user filtering to prevent NullPointerException
+   - Graceful handling of orphaned posts
+   - Try-catch blocks on critical operations
+
+### Admin User
+
+The application automatically creates an admin user on first startup:
+
+```
+Username: admin123
+Password: pxTUxZPBBmgk3XD
+Role: ADMIN
+```
+
+Admin users can:
+- Delete any post (content moderation)
+- Access admin-only endpoints
+- View admin badge in UI next to username
 
 ### Security Best Practices
 
@@ -1063,6 +1078,8 @@ Application health check.
 - ✅ Enable CloudWatch logging for audit trails
 - ✅ Regular dependency updates
 - ✅ Input validation on all endpoints
+- ✅ Null checks to prevent NullPointerException
+- ✅ Filter orphaned data instead of crashing
 
 ---
 

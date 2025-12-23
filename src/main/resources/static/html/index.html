@@ -28,6 +28,7 @@
 
             <!-- User Nav -->
             <div id="navUser" style="display: none; gap: var(--spacing-md); align-items: center;">
+
                 <button class="btn btn-primary" onclick="openCreatePostModal()" style="font-size: 15px; padding: 10px 20px; font-weight: 600;">New Post</button>
                 <div class="user-avatar" id="navUserAvatar" style="width: 36px; height: 36px; font-size: 16px;">U</div>
                 <button class="btn btn-secondary" onclick="logout()" style="font-size: 15px; padding: 10px 20px; font-weight: 600; background: transparent;">Logout</button>
@@ -63,6 +64,43 @@
                 </div>
             </div>
         </main>
+
+        <!-- Right Sidebar - User Info -->
+        <aside class="sidebar-right" id="sidebarRight">
+            <div class="card" style="position: sticky; top: 80px;">
+                <h3 style="font-size: 18px; margin-bottom: var(--spacing-lg); border-bottom: 1px solid var(--border-color); padding-bottom: var(--spacing-md);">
+                    👤 Your Profile
+                </h3>
+                <div style="text-align: center; margin-bottom: var(--spacing-lg);">
+                    <div class="user-avatar" id="sidebarAvatar" style="width: 64px; height: 64px; font-size: 28px; margin: 0 auto var(--spacing-md);">U</div>
+                    <h4 id="sidebarUsername" style="font-size: 16px; margin-bottom: var(--spacing-xs);">Username</h4>
+                    <p id="sidebarEmail" style="font-size: 13px; color: var(--text-secondary); margin-bottom: var(--spacing-md);">email@example.com</p>
+                    <div id="sidebarRoleBadge" style="display: inline-block;"></div>
+                </div>
+                
+                <div style="border-top: 1px solid var(--border-color); padding-top: var(--spacing-md);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-sm);">
+                        <span style="color: var(--text-secondary); font-size: 13px;">Account Type:</span>
+                        <span id="sidebarRole" style="font-weight: 600; font-size: 13px;">USER</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-sm);">
+                        <span style="color: var(--text-secondary); font-size: 13px;">Member Since:</span>
+                        <span id="sidebarMemberSince" style="font-weight: 500; font-size: 13px;">2025</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary); font-size: 13px;">User ID:</span>
+                        <span id="sidebarUserId" style="font-weight: 500; font-size: 13px; font-family: monospace;">-</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: var(--spacing-lg); padding-top: var(--spacing-md); border-top: 1px solid var(--border-color);">
+                    <h4 style="font-size: 14px; margin-bottom: var(--spacing-md); color: var(--text-secondary);">🛡️ Permissions</h4>
+                    <ul id="sidebarPermissions" style="list-style: none; padding: 0; margin: 0; font-size: 13px; line-height: 2;">
+                        <!-- Permissions will be injected by JS -->
+                    </ul>
+                </div>
+            </div>
+        </aside>
     </div>
 
     <!-- Create Post Modal -->
@@ -139,6 +177,6 @@
     <script src="../js/utils.js"></script>
     <script src="../js/ai-integration.js"></script>
     <script src="../js/ai-chat.js"></script>
-    <script src="../js/index-new.js"></script>
+    <script src="../js/index.js?v=2"></script>
 </body>
 </html>

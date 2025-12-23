@@ -20,10 +20,12 @@ public class JwtTokenProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    @Value("${jwt.secret:MyVerySecureAndLongSecretKeyForJWT2024!@#$%^&*()_+1234567890}")
+    // CRITICAL: Read JWT_SECRET from environment variable for production
+    // This ensures consistency between instances and proper security
+    @Value("${JWT_SECRET:${jwt.secret:MyVerySecureAndLongSecretKeyForJWT2024!@#$%^&*()_+1234567890}}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds
+    @Value("${JWT_EXPIRATION:${jwt.expiration:86400000}}") // 24 hours in milliseconds
     private long jwtExpirationMs;
 
     /**

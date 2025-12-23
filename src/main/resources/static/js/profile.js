@@ -10,20 +10,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkLoginStatus() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    if (!token || !userData) {
         window.location.href = 'login.html';
     }
 }
 
 function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('user');
     window.location.href = 'index.html';
 }
 
 function loadUserProfile() {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('userData'));
     if (user) {
         document.querySelector('.profile-name').textContent = user.username;
         document.querySelector('.profile-handle').textContent = '@' + user.username;
@@ -37,7 +40,7 @@ function loadUserProfile() {
 
 // Render Posts
 async function renderUserPosts() {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('userData'));
     if (!user) return;
 
     try {

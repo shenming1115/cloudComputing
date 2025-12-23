@@ -71,8 +71,17 @@ public class PostController {
             Page<Post> postsPage = postService.getAllPostsPaginated(pageable);
             
             // Convert posts to DTOs with pre-signed URLs
+            // Filter out posts with null users to prevent NullPointerException
             List<PostDTO> postsWithUrls = postsPage.getContent().stream()
-                    .map(post -> PostDTO.fromPostWithPresignedUrls(post, s3Service))
+                    .filter(post -> post.getUser() != null)
+                    .map(post -> {
+                        try {
+                            return PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                        } catch (Exception e) {
+                            return null;
+                        }
+                    })
+                    .filter(dto -> dto != null)
                     .collect(java.util.stream.Collectors.toList());
             
             Map<String, Object> response = new HashMap<>();
@@ -147,7 +156,8 @@ public class PostController {
 
     /**
      * DELETE /api/posts/{id}
-     * RBAC: Only post owner or ADMIN can delete
+     * RBAC: Admins can delete any post (content moderation)
+     *       Post owners can delete their own posts
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePost(@PathVariable Long id) {
@@ -167,15 +177,15 @@ public class PostController {
             Post post = postService.getPostById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
             
-            // Authorization check: ADMIN ONLY for content moderation
-            // Per requirement: "Update the DELETE API so it validates if the user has the 'ADMIN' role"
+            // Authorization check: ADMIN can delete any post, users can delete their own
             boolean isAdmin = currentUser.getRole().equals("ADMIN");
+            boolean isOwner = post.getUser() != null && post.getUser().getId().equals(currentUser.getId());
             
-            if (!isAdmin) {
+            if (!isAdmin && !isOwner) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of(
                             "error", "Access denied",
-                            "message", "Only administrators can delete posts. This feature is for content moderation."
+                            "message", "You can only delete your own posts unless you are an administrator."
                         ));
             }
             
@@ -183,9 +193,9 @@ public class PostController {
             postService.deletePost(id);
             
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Post deleted successfully by administrator");
-            response.put("deletedBy", "ADMIN");
-            response.put("adminUsername", currentUser.getUsername());
+            response.put("message", "Post deleted successfully");
+            response.put("deletedBy", isAdmin ? "ADMIN" : "OWNER");
+            response.put("username", currentUser.getUsername());
             response.put("postId", id);
             
             return ResponseEntity.ok(response);

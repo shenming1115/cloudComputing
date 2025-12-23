@@ -12,14 +12,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkLoginStatus() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    if (!token || !userData) {
         window.location.href = 'login.html';
     }
 }
 
 function updateUserAvatar() {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('userData'));
     if (user && user.username) {
         const avatar = user.username.charAt(0).toUpperCase();
         const avatarElement = document.getElementById('commentUserAvatar');
@@ -30,6 +31,8 @@ function updateUserAvatar() {
 }
 
 function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('user');
     window.location.href = 'index.html';

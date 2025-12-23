@@ -33,6 +33,10 @@ function checkLoginStatus() {
         // Migrate from legacy format
         isLoggedIn = true;
         currentUser = JSON.parse(legacyUser);
+        // Ensure token is available for requests
+        if (currentUser.token && !localStorage.getItem('authToken')) {
+            localStorage.setItem('authToken', currentUser.token);
+        }
     } else {
         isLoggedIn = false;
         currentUser = null;
@@ -45,12 +49,88 @@ function checkLoginStatus() {
         heroSection.style.display = 'none';
         if (createPostCard) createPostCard.style.display = 'flex';
 
-        // Update avatar
+        // Update avatar and show role badge
         if (currentUser.username) {
              const avatar = currentUser.username.charAt(0).toUpperCase();
-             document.getElementById('navUserAvatar').textContent = avatar;
+             const navUserAvatar = document.getElementById('navUserAvatar');
+             navUserAvatar.textContent = avatar;
+             
+             // Add role badge next to avatar
+             const role = currentUser.role || 'USER';
+             const roleBadge = role === 'ADMIN' ? 
+                 '<span style="background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 8px;">ADMIN</span>' :
+                 '';
+             
+             // Update navigation to show role
+             const navUserContainer = document.getElementById('navUser');
+             let existingBadge = navUserContainer.querySelector('.role-badge');
+             if (!existingBadge && role === 'ADMIN') {
+                 const badgeElement = document.createElement('span');
+                 badgeElement.className = 'role-badge';
+                 badgeElement.style.cssText = 'background: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;';
+                 badgeElement.textContent = 'ADMIN';
+                 navUserContainer.insertBefore(badgeElement, navUserAvatar);
+             }
+             
              const widgetAvatar = document.querySelector('.create-post-card .user-avatar');
              if (widgetAvatar) widgetAvatar.textContent = avatar;
+        }
+
+        // Update right sidebar with user info
+        updateUserSidebar();
+
+        // Force refresh user data from server to ensure role is up to date
+        if (currentUser.id) {
+            fetch(`/api/users/${currentUser.id}`, {
+                headers: getAuthHeaders()
+            })
+            .then(res => {
+                if (res.ok) return res.json();
+                throw new Error('Failed to fetch user data');
+            })
+            .then(updatedUser => {
+                console.log('Refreshed user data from server:', updatedUser);
+                // Merge updated data with existing token
+                const newData = { ...currentUser, ...updatedUser };
+                // Ensure role is present
+                if (!newData.role) newData.role = 'USER';
+                
+                // Fallback: Ensure admin123 is always ADMIN
+                if (newData.username === 'admin123') {
+                    newData.role = 'ADMIN';
+                }
+
+                // Only update if something changed
+                if (JSON.stringify(newData) !== JSON.stringify(currentUser)) {
+                    console.log('User data changed, updating UI...');
+                    currentUser = newData;
+                    localStorage.setItem('userData', JSON.stringify(currentUser));
+                    
+                    // Re-run UI updates
+                    updateUserSidebar();
+                    
+                    // Update nav badge if needed
+                    const role = currentUser.role;
+                    const navUserContainer = document.getElementById('navUser');
+                    let existingBadge = navUserContainer.querySelector('.role-badge');
+                    
+                    if (role === 'ADMIN') {
+                        if (!existingBadge) {
+                             const badgeElement = document.createElement('span');
+                             badgeElement.className = 'role-badge';
+                             badgeElement.style.cssText = 'background: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;';
+                             badgeElement.textContent = 'ADMIN';
+                             const avatarEl = document.getElementById('navUserAvatar');
+                             if (avatarEl && avatarEl.parentNode === navUserContainer) {
+                                navUserContainer.insertBefore(badgeElement, avatarEl);
+                             }
+                        }
+                    } else if (existingBadge) {
+                        existingBadge.remove();
+                    }
+                }
+            })
+            .catch(err => console.warn('Background user refresh failed:', err));
         }
     } else {
         navGuest.style.display = 'flex';
@@ -58,6 +138,86 @@ function checkLoginStatus() {
         navProfileLink.style.display = 'none';
         heroSection.style.display = 'block';
         if (createPostCard) createPostCard.style.display = 'none';
+        
+        // Hide sidebar when not logged in
+        const sidebar = document.getElementById('sidebarRight');
+        if (sidebar) sidebar.style.display = 'none';
+    }
+}
+
+function updateUserSidebar() {
+    console.log('updateUserSidebar called');
+    try {
+        const sidebar = document.getElementById('sidebarRight');
+        if (!sidebar) {
+            return;
+        }
+        
+        if (!currentUser) {
+            sidebar.style.display = 'none';
+            return;
+        }
+        
+        // Ensure sidebar is visible
+        sidebar.style.display = 'block';
+
+        // Helper to safely update text
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = text;
+            } else {
+                console.warn(`Element with id '${id}' not found`);
+            }
+        };
+
+        // Update Basic Info
+        const avatar = currentUser.username ? currentUser.username.charAt(0).toUpperCase() : '?';
+        setText('sidebarAvatar', avatar);
+        setText('sidebarUsername', currentUser.username || 'Unknown User');
+        setText('sidebarEmail', currentUser.email || 'No email provided');
+        setText('sidebarUserId', currentUser.id || 'N/A');
+        
+        // Update Member Since
+        const year = currentUser.createdAt ? new Date(currentUser.createdAt).getFullYear() : new Date().getFullYear();
+        setText('sidebarMemberSince', year);
+
+        // Update Role Badge & Text
+        const role = currentUser.role || 'USER';
+        setText('sidebarRole', role);
+        
+        const roleBadgeContainer = document.getElementById('sidebarRoleBadge');
+        if (roleBadgeContainer) {
+            if (role === 'ADMIN') {
+                roleBadgeContainer.innerHTML = '<span style="background: #e74c3c; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">🛡️ ADMIN</span>';
+            } else {
+                roleBadgeContainer.innerHTML = '<span style="background: #3498db; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">👤 USER</span>';
+            }
+        }
+
+        // Update Permissions
+        const permissionsContainer = document.getElementById('sidebarPermissions');
+        if (permissionsContainer) {
+            if (role === 'ADMIN') {
+                permissionsContainer.innerHTML = `
+                    <li style="color: #27ae60;">✓ Create & Edit Posts</li>
+                    <li style="color: #27ae60;">✓ Delete Any Post</li>
+                    <li style="color: #27ae60;">✓ Manage Users</li>
+                    <li style="color: #27ae60;">✓ Admin Panel Access</li>
+                `;
+            } else {
+                permissionsContainer.innerHTML = `
+                    <li style="color: #27ae60;">✓ Create Posts</li>
+                    <li style="color: #27ae60;">✓ Edit Own Posts</li>
+                    <li style="color: #95a5a6;">✗ Delete Others' Posts</li>
+                    <li style="color: #95a5a6;">✗ Admin Panel Access</li>
+                `;
+            }
+        }
+        
+    } catch (e) {
+        console.error('CRITICAL ERROR in updateUserSidebar:', e);
+        alert('UI Error: ' + e.message);
     }
 }
 
@@ -103,7 +263,8 @@ async function renderPosts() {
                     user: { 
                         name: user.username, 
                         handle: '@' + user.username, 
-                        avatar: user.username ? user.username.charAt(0).toUpperCase() : '?' 
+                        avatar: user.username ? user.username.charAt(0).toUpperCase() : '?',
+                        role: user.role || 'USER'
                     },
                     content: post.content,
                     timestamp: new Date(post.createdAt).toLocaleString(),
@@ -133,12 +294,18 @@ function createPostHTML(post) {
     const safeName = escapeHtml(post.user.name);
     const safeHandle = escapeHtml(post.user.handle);
     
+    // Add role badge if user is admin
+    const userRole = post.user.role || 'USER';
+    const roleBadge = userRole === 'ADMIN' ? 
+        '<span style="background: #e74c3c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; margin-left: 6px;">ADMIN</span>' : 
+        '';
+    
     return `
         <article class="card post-card">
             <div class="post-header">
                 <div class="user-avatar">${post.user.avatar}</div>
                 <div class="post-info">
-                    <h3>${safeName}</h3>
+                    <h3>${safeName}${roleBadge}</h3>
                     <span>${safeHandle} · ${post.timestamp}</span>
                 </div>
             </div>
