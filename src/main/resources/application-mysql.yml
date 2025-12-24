@@ -2,8 +2,8 @@
 spring:
   datasource:
     url: jdbc:mysql://social-forum-db-mysql.cbii4gykc5p0.ap-southeast-2.rds.amazonaws.com:3306/social_forum?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: admin123
-    password: pxTUxZPBBmgk3XD
+    username: ${DB_USERNAME:admin123}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     
     # Connection pool configuration

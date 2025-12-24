@@ -83,10 +83,17 @@ public class PostService {
             if (posts == null) {
                 return java.util.Collections.emptyList();
             }
-            // Filter out posts with null users (orphaned posts)
-            return posts.stream()
-                    .filter(post -> post != null && post.getUser() != null)
-                    .collect(Collectors.toList());
+            // Handle orphaned posts (null user)
+            posts.forEach(post -> {
+                if (post.getUser() == null) {
+                    User dummyUser = new User();
+                    dummyUser.setId(-1L);
+                    dummyUser.setUsername("Unknown User");
+                    dummyUser.setRole("USER");
+                    post.setUser(dummyUser);
+                }
+            });
+            return posts;
         } catch (Exception e) {
             logger.error("Error fetching all posts: {}", e.getMessage());
             return java.util.Collections.emptyList();
@@ -134,9 +141,17 @@ public class PostService {
             pageable.getPageNumber(), pageable.getPageSize());
         Page<Post> page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
         
-        // Filter out posts with null users (orphaned posts)
-        // Note: This is a workaround for data integrity issues
-        // Better solution: Add foreign key constraints and cascade deletes
+        // Handle orphaned posts (null user)
+        page.getContent().forEach(post -> {
+            if (post.getUser() == null) {
+                User dummyUser = new User();
+                dummyUser.setId(-1L);
+                dummyUser.setUsername("Unknown User");
+                dummyUser.setRole("USER");
+                post.setUser(dummyUser);
+            }
+        });
+        
         return page;
     }
 

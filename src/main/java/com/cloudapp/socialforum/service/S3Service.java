@@ -18,6 +18,8 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -37,7 +39,7 @@ public class S3Service {
     @Autowired
     private S3Presigner s3Presigner;
 
-    @Value("${aws.s3.bucket-name:social-forum-media}")
+    @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
     @Value("${aws.s3.region:ap-southeast-2}")
@@ -80,11 +82,30 @@ public class S3Service {
      */
     public String generatePresignedDownloadUrl(String s3Key) {
         if (cloudfrontDomain != null && !cloudfrontDomain.isEmpty()) {
-            // Ensure domain doesn't have protocol
-            String domain = cloudfrontDomain.replace("https://", "").replace("http://", "");
-            // Remove leading slash from key if present
-            String key = s3Key.startsWith("/") ? s3Key.substring(1) : s3Key;
-            return "https://" + domain + "/" + key;
+            try {
+                // Ensure domain doesn't have protocol
+                String domain = cloudfrontDomain.replace("https://", "").replace("http://", "");
+                // Remove leading slash from key if present
+                String key = s3Key.startsWith("/") ? s3Key.substring(1) : s3Key;
+                
+                // URL Encode the key to handle spaces and special characters
+                // We need to encode path segments individually to preserve slashes
+                String[] parts = key.split("/");
+                StringBuilder encodedKey = new StringBuilder();
+                for (int i = 0; i < parts.length; i++) {
+                    encodedKey.append(URLEncoder.encode(parts[i], StandardCharsets.UTF_8.toString())
+                            .replace("+", "%20")); // Replace + with %20 for S3/CloudFront compatibility
+                    if (i < parts.length - 1) {
+                        encodedKey.append("/");
+                    }
+                }
+                
+                return "https://" + domain + "/" + encodedKey.toString();
+            } catch (Exception e) {
+                logger.error("Error encoding URL for CloudFront: {}", e.getMessage());
+                // Fallback to raw string if encoding fails
+                return "https://" + cloudfrontDomain + "/" + s3Key;
+            }
         }
         
         // Fallback to S3 pre-signed URL if CloudFront is not configured
