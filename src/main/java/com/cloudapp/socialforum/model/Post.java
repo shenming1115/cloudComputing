@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +29,12 @@ public class Post {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    @Column(name = "video_url", length = 500)
+    private String videoUrl;
+
+    @Column(name = "media_type", length = 20)
+    private String mediaType; // "image", "video", "reel", "text"
+
     @Column(name = "share_token", unique = true, length = 36)
     private String shareToken;
 
@@ -43,11 +50,16 @@ public class Post {
     @JsonIgnore
     private List<Comment> comments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Like> likes = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        // Set to Malaysia/KL timezone (GMT+8)
+        createdAt = LocalDateTime.now(ZoneId.of("Asia/Kuala_Lumpur"));
     }
 }

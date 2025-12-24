@@ -10,6 +10,9 @@ const createPostCard = document.querySelector('.create-post-card');
 
 // State
 let isLoggedIn = false;
+let currentUser = null;
+let selectedFile = null;
+let selectedMediaType = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,23 +20,168 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPosts();
 });
 
-function checkLoginStatus() {
-    isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const user = JSON.parse(localStorage.getItem('user'));
+function handleFileSelect(input, type) {
+    if (input.files && input.files[0]) {
+        selectedFile = input.files[0];
+        selectedMediaType = type;
+        
+        const fileNameDisplay = document.getElementById('selectedFileName');
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = `Selected: ${selectedFile.name} (${type})`;
+            fileNameDisplay.style.color = '#4f46e5';
+        }
+    }
+}
 
-    if (isLoggedIn) {
+async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const endpoint = selectedMediaType === 'image' ? '/api/upload/image' : '/api/upload/video';
+    
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: formData
+    });
+    
+    if (!response.ok) {
+        throw new Error('File upload failed');
+    }
+    
+    const data = await response.json();
+    return data.url;
+}
+
+function checkLoginStatus() {
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    
+    // Support legacy storage format
+    const legacyLogin = localStorage.getItem('isLoggedIn') === 'true';
+    const legacyUser = localStorage.getItem('user');
+    
+    if (token && userData) {
+        isLoggedIn = true;
+        currentUser = JSON.parse(userData);
+    } else if (legacyLogin && legacyUser) {
+        // Migrate from legacy format
+        isLoggedIn = true;
+        currentUser = JSON.parse(legacyUser);
+        // Ensure token is available for requests
+        if (currentUser.token && !localStorage.getItem('authToken')) {
+            localStorage.setItem('authToken', currentUser.token);
+        }
+    } else {
+        isLoggedIn = false;
+        currentUser = null;
+    }
+
+    if (isLoggedIn && currentUser) {
         navGuest.style.display = 'none';
         navUser.style.display = 'flex';
         navProfileLink.style.display = 'flex';
         heroSection.style.display = 'none';
         if (createPostCard) createPostCard.style.display = 'flex';
 
-        // Update avatar
-        if (user && user.username) {
-             const avatar = user.username.charAt(0).toUpperCase();
-             document.getElementById('navUserAvatar').textContent = avatar;
+        // Admin Dashboard Link
+        if (currentUser.role === 'ADMIN') {
+            if (!document.getElementById('adminDashboardLink')) {
+                const adminLink = document.createElement('a');
+                adminLink.id = 'adminDashboardLink';
+                adminLink.href = '/html/admin-dashboard.html';
+                adminLink.className = 'nav-item';
+                adminLink.innerHTML = '<i class="fas fa-shield-alt"></i> Admin';
+                adminLink.style.marginRight = '1rem';
+                adminLink.style.color = '#ef4444'; // Red color to stand out
+                navUser.insertBefore(adminLink, navUser.firstChild);
+            }
+        }
+
+        // Update avatar and show role badge
+        if (currentUser.username) {
+             const avatar = currentUser.username.charAt(0).toUpperCase();
+             const navUserAvatar = document.getElementById('navUserAvatar');
+             navUserAvatar.textContent = avatar;
+             
+             // Add role badge next to avatar
+             const role = currentUser.role || 'USER';
+             const roleBadge = role === 'ADMIN' ? 
+                 '<span style="background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 8px;">ADMIN</span>' :
+                 '';
+             
+             // Update navigation to show role
+             const navUserContainer = document.getElementById('navUser');
+             let existingBadge = navUserContainer.querySelector('.role-badge');
+             if (!existingBadge && role === 'ADMIN') {
+                 const badgeElement = document.createElement('span');
+                 badgeElement.className = 'role-badge';
+                 badgeElement.style.cssText = 'background: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;';
+                 badgeElement.textContent = 'ADMIN';
+                 navUserContainer.insertBefore(badgeElement, navUserAvatar);
+             }
+             
              const widgetAvatar = document.querySelector('.create-post-card .user-avatar');
              if (widgetAvatar) widgetAvatar.textContent = avatar;
+        }
+
+        // Update right sidebar with user info
+        updateUserSidebar();
+
+        // Force refresh user data from server to ensure role is up to date
+        if (currentUser.id) {
+            fetch(`/api/users/${currentUser.id}`, {
+                headers: getAuthHeaders()
+            })
+            .then(res => {
+                if (res.ok) return res.json();
+                throw new Error('Failed to fetch user data');
+            })
+            .then(updatedUser => {
+                console.log('Refreshed user data from server:', updatedUser);
+                // Merge updated data with existing token
+                const newData = { ...currentUser, ...updatedUser };
+                // Ensure role is present
+                if (!newData.role) newData.role = 'USER';
+                
+                // Fallback: Ensure admin123 is always ADMIN
+                if (newData.username === 'admin123') {
+                    newData.role = 'ADMIN';
+                }
+
+                // Only update if something changed
+                if (JSON.stringify(newData) !== JSON.stringify(currentUser)) {
+                    console.log('User data changed, updating UI...');
+                    currentUser = newData;
+                    localStorage.setItem('userData', JSON.stringify(currentUser));
+                    
+                    // Re-run UI updates
+                    updateUserSidebar();
+                    
+                    // Update nav badge if needed
+                    const role = currentUser.role;
+                    const navUserContainer = document.getElementById('navUser');
+                    let existingBadge = navUserContainer.querySelector('.role-badge');
+                    
+                    if (role === 'ADMIN') {
+                        if (!existingBadge) {
+                             const badgeElement = document.createElement('span');
+                             badgeElement.className = 'role-badge';
+                             badgeElement.style.cssText = 'background: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;';
+                             badgeElement.textContent = 'ADMIN';
+                             const avatarEl = document.getElementById('navUserAvatar');
+                             if (avatarEl && avatarEl.parentNode === navUserContainer) {
+                                navUserContainer.insertBefore(badgeElement, avatarEl);
+                             }
+                        }
+                    } else if (existingBadge) {
+                        existingBadge.remove();
+                    }
+                }
+            })
+            .catch(err => console.warn('Background user refresh failed:', err));
         }
     } else {
         navGuest.style.display = 'flex';
@@ -41,13 +189,109 @@ function checkLoginStatus() {
         navProfileLink.style.display = 'none';
         heroSection.style.display = 'block';
         if (createPostCard) createPostCard.style.display = 'none';
+        
+        // Hide sidebar when not logged in
+        const sidebar = document.getElementById('sidebarRight');
+        if (sidebar) sidebar.style.display = 'none';
+    }
+}
+
+function updateUserSidebar() {
+    console.log('updateUserSidebar called');
+    try {
+        const sidebar = document.getElementById('sidebarRight');
+        if (!sidebar) {
+            return;
+        }
+        
+        if (!currentUser) {
+            sidebar.style.display = 'none';
+            return;
+        }
+        
+        // Ensure sidebar is visible
+        sidebar.style.display = 'block';
+
+        // Helper to safely update text
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = text;
+            } else {
+                console.warn(`Element with id '${id}' not found`);
+            }
+        };
+
+        // Update Basic Info
+        const avatar = currentUser.username ? currentUser.username.charAt(0).toUpperCase() : '?';
+        setText('sidebarAvatar', avatar);
+        setText('sidebarUsername', currentUser.username || 'Unknown User');
+        setText('sidebarEmail', currentUser.email || 'No email provided');
+        setText('sidebarUserId', currentUser.id || 'N/A');
+        
+        // Update Member Since
+        const year = currentUser.createdAt ? new Date(currentUser.createdAt).getFullYear() : new Date().getFullYear();
+        setText('sidebarMemberSince', year);
+
+        // Update Role Badge & Text
+        const role = currentUser.role || 'USER';
+        setText('sidebarRole', role);
+        
+        const roleBadgeContainer = document.getElementById('sidebarRoleBadge');
+        if (roleBadgeContainer) {
+            if (role === 'ADMIN') {
+                roleBadgeContainer.innerHTML = '<span style="background: #e74c3c; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">🛡️ ADMIN</span>';
+            } else {
+                roleBadgeContainer.innerHTML = '<span style="background: #3498db; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">👤 USER</span>';
+            }
+        }
+
+        // Update Permissions
+        const permissionsContainer = document.getElementById('sidebarPermissions');
+        if (permissionsContainer) {
+            if (role === 'ADMIN') {
+                permissionsContainer.innerHTML = `
+                    <li style="color: #27ae60;">✓ Create & Edit Posts</li>
+                    <li style="color: #27ae60;">✓ Delete Any Post</li>
+                    <li style="color: #27ae60;">✓ Manage Users</li>
+                    <li style="color: #27ae60;">✓ Admin Panel Access</li>
+                `;
+            } else {
+                permissionsContainer.innerHTML = `
+                    <li style="color: #27ae60;">✓ Create Posts</li>
+                    <li style="color: #27ae60;">✓ Edit Own Posts</li>
+                    <li style="color: #95a5a6;">✗ Delete Others' Posts</li>
+                    <li style="color: #95a5a6;">✗ Admin Panel Access</li>
+                `;
+            }
+        }
+        
+    } catch (e) {
+        console.error('CRITICAL ERROR in updateUserSidebar:', e);
+        alert('UI Error: ' + e.message);
     }
 }
 
 function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('user');
     window.location.reload();
+}
+
+// Helper function to get auth headers
+function getAuthHeaders() {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+    }
+    return {
+        'Content-Type': 'application/json'
+    };
 }
 
 // Render Posts
@@ -67,15 +311,20 @@ async function renderPosts() {
                 const user = post.user || { username: 'Unknown' };
                 return {
                     id: post.id,
+                    userId: user.id, // Add userId for ownership check
                     user: { 
                         name: user.username, 
                         handle: '@' + user.username, 
-                        avatar: user.username ? user.username.charAt(0).toUpperCase() : '?' 
+                        avatar: user.username ? user.username.charAt(0).toUpperCase() : '?',
+                        role: user.role || 'USER'
                     },
                     content: post.content,
+                    imageUrl: post.imageUrl,
+                    videoUrl: post.videoUrl,
+                    mediaType: post.mediaType,
                     timestamp: new Date(post.createdAt).toLocaleString(),
-                    likes: 0,
-                    comments: post.comments ? post.comments.length : 0
+                    likes: post.likesCount || 0,
+                    comments: post.commentsCount || 0
                 };
             });
             
@@ -95,23 +344,60 @@ async function renderPosts() {
 }
 
 function createPostHTML(post) {
-    // 安全地转义用户输入的内容
+    // Safely escape user input content
     const safeContent = sanitizeContent(post.content);
     const safeName = escapeHtml(post.user.name);
     const safeHandle = escapeHtml(post.user.handle);
     
+    // Add role badge if user is admin
+    const userRole = post.user.role || 'USER';
+    const roleBadge = userRole === 'ADMIN' ? 
+        '<span style="background: #e74c3c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; margin-left: 6px;">ADMIN</span>' : 
+        '';
+    
+    // Add delete button if admin or owner
+    let deleteButton = '';
+    if (isLoggedIn && currentUser) {
+        const isAdmin = currentUser.role === 'ADMIN';
+        const isOwner = currentUser.id === post.userId;
+        
+        if (isAdmin || isOwner) {
+            deleteButton = `
+                <button class="action-btn delete-btn" onclick="deletePost(${post.id})" style="color: #e74c3c; margin-left: auto;">
+                    <span>🗑️</span> Delete
+                </button>
+            `;
+        }
+    }
+
+    // Media Content
+    let mediaContent = '';
+    if (post.imageUrl) {
+        mediaContent = `<div class="post-media"><img src="${post.imageUrl}" alt="Post image" style="width: 100%; border-radius: 8px; margin-top: 10px;"></div>`;
+    } else if (post.videoUrl) {
+        mediaContent = `
+            <div class="post-media">
+                <video controls style="width: 100%; border-radius: 8px; margin-top: 10px;">
+                    <source src="${post.videoUrl}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>`;
+    }
+    
     return `
-        <article class="card post-card">
+        <article class="card post-card" id="post-${post.id}">
             <div class="post-header">
                 <div class="user-avatar">${post.user.avatar}</div>
                 <div class="post-info">
-                    <h3>${safeName}</h3>
+                    <h3>${safeName}${roleBadge}</h3>
                     <span>${safeHandle} · ${post.timestamp}</span>
                 </div>
+                ${deleteButton}
             </div>
             <div class="post-content">
                 ${safeContent}
             </div>
+            ${mediaContent}
             <div class="post-actions">
                 <button class="action-btn" onclick="handleLike(${post.id})">
                     <span>♥</span> ${post.likes}
@@ -149,42 +435,106 @@ async function submitPost() {
     }
     
     const content = postContentInput.value.trim();
-    if (!content) return;
+    if (!content && !selectedFile) {
+        alert('Please enter some content or select a file.');
+        return;
+    }
 
-    const user = JSON.parse(localStorage.getItem('user'));
+    const submitBtn = document.querySelector('button[onclick="submitPost()"]');
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Posting...';
 
     try {
+        let mediaUrl = null;
+        
+        if (selectedFile) {
+            submitBtn.textContent = 'Uploading Media...';
+            try {
+                mediaUrl = await uploadFile(selectedFile);
+            } catch (uploadError) {
+                console.error('Upload error:', uploadError);
+                alert('Failed to upload media: ' + uploadError.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
+            }
+        }
+
+        submitBtn.textContent = 'Creating Post...';
+        
+        const postData = {
+            content: content,
+            userId: currentUser.id,
+            imageUrl: selectedMediaType === 'image' ? mediaUrl : null,
+            videoUrl: (selectedMediaType === 'video' || selectedMediaType === 'reel') ? mediaUrl : null,
+            mediaType: selectedMediaType ? selectedMediaType.toUpperCase() : null
+        };
+
         const response = await fetch('/api/posts', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                content: content,
-                userId: user.id,
-                imageUrl: null
-            })
+            headers: getAuthHeaders(),
+            body: JSON.stringify(postData)
         });
+
+        if (response.status === 401) {
+            alert('Session expired. Please login again.');
+            logout();
+            return;
+        }
 
         if (response.ok) {
             renderPosts();
             closeCreatePostModal();
+            // Reset state
+            selectedFile = null;
+            selectedMediaType = null;
+            const fileNameDisplay = document.getElementById('selectedFileName');
+            if (fileNameDisplay) fileNameDisplay.textContent = '';
         } else {
             const error = await response.json();
-            alert('Failed to create post: ' + (error.message || 'Unknown error'));
+            alert('Failed to create post: ' + (error.message || error.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error:', error);
         alert('Error creating post');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
     }
 }
 
-function handleLike(postId) {
+async function handleLike(postId) {
     if (!isLoggedIn) {
         window.location.href = 'login.html';
         return;
     }
-    alert('Like feature not implemented in backend yet.');
+
+    const btn = document.querySelector(`#post-${postId} .action-btn[onclick="handleLike(${postId})"]`);
+    const originalContent = btn.innerHTML;
+    
+    try {
+        const response = await fetch(`/api/posts/${postId}/likes?userId=${currentUser.id}`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            // Update like count and style
+            const likeCount = data.likeCount !== undefined ? data.likeCount : data.likes;
+            const isLiked = data.liked; // Assuming backend returns this
+            
+            btn.innerHTML = `<span style="${isLiked ? 'color: #e74c3c;' : ''}">♥</span> ${likeCount}`;
+            if (isLiked) {
+                btn.classList.add('liked');
+            } else {
+                btn.classList.remove('liked');
+            }
+        }
+    } catch (error) {
+        console.error('Error liking post:', error);
+    }
 }
 
 function handleComment(postId) {
@@ -201,16 +551,65 @@ function handleShare(postId) {
         return;
     }
     // Call share endpoint
-    fetch(`/api/posts/${postId}/share`, { method: 'POST' })
-        .then(res => res.json())
+    fetch(`/api/posts/${postId}/share`, { 
+        method: 'POST',
+        headers: getAuthHeaders()
+    })
+        .then(res => {
+            if (res.status === 401) {
+function deletePost(postId) {
+    if (!confirm('Are you sure you want to delete this post?')) {
+        return;
+    }
+
+    fetch(`/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+    })
+    .then(response => {
+        if (response.ok) {
+            // Remove post from UI
+            const postElement = document.getElementById(`post-${postId}`);
+            if (postElement) {
+                postElement.remove();
+            } else {
+                renderPosts(); // Fallback
+            }
+        } else {
+            return response.json().then(err => {
+                throw new Error(err.message || 'Failed to delete post');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting post:', error);
+        alert('Failed to delete post: ' + error.message);
+    });
+}
+
+                alert('Session expired. Please login again.');
+                logout();
+                throw new Error('Unauthorized');
+            }
+            return res.json();
+        })
         .then(data => {
             if (data.shareUrl) {
-                prompt("Copy this link to share:", data.shareUrl);
+                // Try to copy to clipboard automatically
+                navigator.clipboard.writeText(data.shareUrl).then(() => {
+                    alert("Link copied to clipboard: " + data.shareUrl);
+                }).catch(() => {
+                    // Fallback
+                    prompt("Copy this link to share:", data.shareUrl);
+                });
             } else {
-                alert('Could not generate share link');
+                alert('Could not generate share link: ' + (data.message || data.error || 'Unknown error'));
             }
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+            console.error(err);
+            alert('Error sharing post: ' + err.message);
+        });
 }
 
 // Close modal when clicking outside

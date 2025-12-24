@@ -21,13 +21,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkLoginStatus() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    if (!token || !userData) {
         window.location.href = 'login.html';
     }
 }
 
 function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('user');
     window.location.href = 'index.html';
@@ -63,28 +66,31 @@ async function performSearch(query) {
     searchResults.innerHTML = '<div class="text-center" style="grid-column: 1/-1;">Searching...</div>';
 
     try {
-        // Fetch all posts (Client-side filtering for now as backend search is not implemented)
-        // In a real app, we would have /api/search?q=query
-        const response = await fetch('/api/posts');
-        if (response.ok) {
-            const posts = await response.json();
-            const filteredPosts = posts.filter(post => 
-                post.content.toLowerCase().includes(query.toLowerCase()) ||
-                (post.user && post.user.username.toLowerCase().includes(query.toLowerCase()))
-            );
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`/api/search?query=${encodeURIComponent(query)}&type=${currentFilter}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-            renderResults(filteredPosts, query);
+        if (response.ok) {
+            const data = await response.json();
+            renderResults(data, query);
         } else {
-            searchResults.innerHTML = '<div class="text-center" style="grid-column: 1/-1;">Error searching posts.</div>';
+            searchResults.innerHTML = '<div class="text-center" style="grid-column: 1/-1;">Error searching.</div>';
         }
     } catch (error) {
         console.error('Search error:', error);
-        searchResults.innerHTML = '<div class="text-center" style="grid-column: 1/-1;">Error searching posts.</div>';
+        searchResults.innerHTML = '<div class="text-center" style="grid-column: 1/-1;">Error searching.</div>';
     }
 }
 
-function renderResults(posts, query) {
-    if (posts.length === 0) {
+function renderResults(data, query) {
+    const posts = data.posts || [];
+    const users = data.users || [];
+    const allResults = [...posts, ...users];
+
+    if (allResults.length === 0) {
         searchResults.innerHTML = `
             <div class="text-center" style="grid-column: 1/-1; color: var(--text-secondary); padding: 40px;">
                 No results found for "${query}"
@@ -93,22 +99,19 @@ function renderResults(posts, query) {
         return;
     }
 
-    // Filter based on type if needed (currently only posts are supported)
-    let displayPosts = posts;
-    if (currentFilter === 'people') {
-        displayPosts = []; // No user search yet
+    let html = '';
+    
+    // Render users first if any
+    if (users.length > 0) {
+        html += users.map(user => createUserHTML(user)).join('');
     }
 
-    if (displayPosts.length === 0 && currentFilter === 'people') {
-         searchResults.innerHTML = `
-            <div class="text-center" style="grid-column: 1/-1; color: var(--text-secondary); padding: 40px;">
-                User search is not supported yet.
-            </div>
-        `;
-        return;
+    // Render posts
+    if (posts.length > 0) {
+        html += posts.map(post => createPostHTML(post)).join('');
     }
 
-    searchResults.innerHTML = displayPosts.map(post => createPostHTML(post)).join('');
+    searchResults.innerHTML = html;
 }
 
 function createPostHTML(post) {
@@ -118,7 +121,7 @@ function createPostHTML(post) {
     const likes = 0;
     const commentsCount = post.comments ? post.comments.length : 0;
 
-    // 安全地转义用户输入
+    // Safely escape user input
     const safeUsername = escapeHtml(user.username);
     const safeContent = sanitizeContent(post.content);
 
@@ -149,59 +152,19 @@ function createPostHTML(post) {
     `;
 }
 
-    renderResults(results);
-
-
-function renderResults(results) {
-    if (results.length === 0) {
-        searchResults.innerHTML = `
-            <div class="text-center" style="grid-column: 1/-1; color: var(--text-secondary); padding: 40px;">
-                No results found for "${searchInput.value}"
-            </div>
-        `;
-        return;
-    }
-
-    searchResults.innerHTML = results.map(item => {
-        if (item.type === 'post') {
-            return createPostHTML(item);
-        } else {
-            return createUserHTML(item);
-        }
-    }).join('');
-}
-
-function createPostHTML(post) {
-    return `
-        <article class="card post-card">
-            <div class="post-header">
-                <div class="user-avatar">${post.user.avatar}</div>
-                <div class="post-info">
-                    <h3>${post.user.name}</h3>
-                    <span>${post.user.handle} · ${post.timestamp}</span>
-                </div>
-            </div>
-            <div class="post-content">
-                ${post.content}
-            </div>
-            <div class="post-actions">
-                <button class="action-btn"><span>♥</span> ${post.likes}</button>
-                <button class="action-btn" onclick="window.location.href='post-details.html?id=${post.id}'"><span>💬</span> ${post.comments}</button>
-            </div>
-        </article>
-    `;
-}
-
 function createUserHTML(user) {
+    const avatar = user.username ? user.username.charAt(0).toUpperCase() : '?';
+    const safeUsername = escapeHtml(user.username);
+    const safeEmail = escapeHtml(user.email);
+
     return `
-        <div class="card user-result-card">
-            <div class="user-avatar">${user.avatar}</div>
-            <div class="user-result-info">
-                <div class="user-result-name">${user.name}</div>
-                <div class="user-result-handle">${user.handle}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">${user.bio}</div>
+        <div class="card user-result-card" style="display: flex; align-items: center; padding: 15px; gap: 15px;">
+            <div class="user-avatar" style="width: 50px; height: 50px; font-size: 1.2rem;">${avatar}</div>
+            <div class="user-result-info" style="flex: 1;">
+                <div class="user-result-name" style="font-weight: bold;">${safeUsername}</div>
+                <div class="user-result-handle" style="color: var(--text-secondary); font-size: 0.9rem;">${safeEmail}</div>
             </div>
-            <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem;">Follow</button>
+            <button class="btn btn-secondary" style="padding: 6px 16px; font-size: 0.9rem;">View Profile</button>
         </div>
     `;
 }

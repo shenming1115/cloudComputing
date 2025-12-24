@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Social Forum</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-shield-alt"></i> Admin Panel
+        </div>
+        <div class="sidebar-nav">
+            <a onclick="showSection('dashboard')" class="nav-item active" id="nav-dashboard">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a onclick="showSection('users')" class="nav-item" id="nav-users">
+                <i class="fas fa-users"></i> User Management
+            </a>
+            <a onclick="showSection('posts')" class="nav-item" id="nav-posts">
+                <i class="fas fa-newspaper"></i> Global Posts
+            </a>
+            <a onclick="showSection('s3')" class="nav-item" id="nav-s3">
+                <i class="fas fa-cloud"></i> S3 Explorer
+            </a>
+            <a onclick="showSection('system')" class="nav-item" id="nav-system">
+                <i class="fas fa-cogs"></i> System & Logs
+            </a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-sign-out-alt"></i> Back to Site
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <!-- Header -->
+        <div class="header">
+            <h1 class="page-title" id="pageTitle">Dashboard</h1>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="card" style="padding: 0.5rem 1rem; margin: 0; display: flex; align-items: center;">
+                    <span id="systemHealthIndicator" class="status-indicator status-green" style="background-color: var(--accent-green); box-shadow: none; animation: none;"></span>
+                    <span id="systemHealthText" style="font-weight: 500; font-size: 0.875rem;">System Healthy</span>
+                </div>
+                <div class="card" style="padding: 0.5rem 1rem; margin: 0;">
+                    <i class="fas fa-user-shield" style="color: var(--text-secondary); margin-right: 0.5rem;"></i>
+                    <span id="adminUsername" style="font-weight: 500; font-size: 0.875rem;">Admin</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section active">
+            <!-- AWS Health & System Metrics -->
+            <h2 style="margin-bottom: 1rem; font-size: 1.1rem; color: var(--text-secondary);">System Overview</h2>
+            <div class="stats-grid-3">
+                <!-- EC2 Instance + System Resources -->
+                <div class="card" onclick="openModal('ec2Modal')" style="cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <i class="fab fa-aws fa-2x" style="color: #ff9900;"></i>
+                        <div>
+                            <div style="font-weight: 600;">EC2 Instance</div>
+                            <div id="awsInstanceId" style="font-family: monospace; color: var(--text-secondary);">Fetching...</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.875rem; margin-bottom: 0.75rem;">
+                        <div>Region: <span id="awsRegion" style="font-weight: 600;">-</span></div>
+                        <div>Zone: <span id="awsZone" style="font-weight: 600;">-</span></div>
+                    </div>
+                    <!-- Integrated Metrics -->
+                    <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #f3f4f6; font-size: 0.875rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <span style="color: var(--text-secondary);"><i class="fas fa-microchip"></i> CPU Load</span>
+                            <span id="statCpu" style="font-weight: 600; color: var(--text-primary);">0%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-secondary);"><i class="fas fa-memory"></i> JVM Mem</span>
+                            <span id="statMemory" style="font-weight: 600; color: var(--text-primary);">0 MB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RDS Database + Data Metrics -->
+                <div class="card" onclick="openModal('rdsModal')" style="cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <i class="fas fa-database fa-2x" style="color: #3b82f6;"></i>
+                        <div>
+                            <div style="font-weight: 600;">RDS Database</div>
+                            <div style="color: var(--accent-green); font-size: 0.875rem;"><i class="fas fa-check-circle"></i> Connected</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.875rem; margin-bottom: 0.75rem;">
+                        <div>Active Connections: <span id="dbConnections" style="font-weight: 600;">-</span></div>
+                        <div>Latency: <span style="font-weight: 600;">~2ms</span></div>
+                    </div>
+                    <!-- Integrated Metrics -->
+                    <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #f3f4f6; font-size: 0.875rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <span style="color: var(--text-secondary);"><i class="fas fa-users"></i> Users</span>
+                            <span id="statTotalUsers" style="font-weight: 600; color: var(--text-primary);">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-secondary);"><i class="fas fa-file-alt"></i> Posts</span>
+                            <span id="statTotalPosts" style="font-weight: 600; color: var(--text-primary);">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Worker -->
+                <div class="card" onclick="openModal('aiModal')" style="cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <i class="fas fa-robot fa-2x" style="color: #8b5cf6;"></i>
+                        <div>
+                            <div style="font-weight: 600;">AI Worker</div>
+                            <div id="aiStatus" style="color: var(--accent-green); font-size: 0.875rem;">Checking...</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.875rem;">
+                        <div>Model: <span style="font-weight: 600;">Gemini Pro</span></div>
+                        <div>Status: <span style="font-weight: 600;">Online</span></div>
+                    </div>
+                    <!-- Integrated Metrics (Placeholder for balance) -->
+                    <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #f3f4f6; font-size: 0.875rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <span style="color: var(--text-secondary);">Requests (24h)</span>
+                            <span style="font-weight: 600;">1,245</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-secondary);">Avg Latency</span>
+                            <span style="font-weight: 600;">850ms</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Section -->
+        <div id="users" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Global User Directory</h3>
+                    <input type="text" placeholder="Search users..." style="padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- JS Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Posts Section -->
+        <div id="posts" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Global Post Feed (All Content)</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Author</th>
+                                <th>Content Preview</th>
+                                <th>Image</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="postsTableBody">
+                            <!-- JS Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- S3 Section -->
+        <div id="s3" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">S3 Storage Explorer</h3>
+                    <div style="display: flex; gap: 1rem;">
+                        <button onclick="syncS3()" class="btn btn-primary"><i class="fas fa-sync"></i> Consistency Check</button>
+                        <button onclick="cleanupOrphans()" id="cleanupBtn" class="btn btn-danger" style="display: none;"><i class="fas fa-broom"></i> Clean Orphans</button>
+                    </div>
+                </div>
+                
+                <div id="consistencyReport" style="display: none; background: #fffbeb; border: 1px solid #fcd34d; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: #92400e; margin-top: 0; margin-bottom: 0.5rem;">Consistency Report</h4>
+                    <div style="display: flex; gap: 2rem; font-size: 0.9rem;">
+                        <div>Total S3 Files: <strong id="reportS3">0</strong></div>
+                        <div>DB References: <strong id="reportDb">0</strong></div>
+                        <div>Orphan Files: <strong id="reportOrphans" style="color: #dc2626;">0</strong></div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Size</th>
+                                <th>Type</th>
+                                <th>Last Modified</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="s3TableBody">
+                            <!-- JS Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Section -->
+        <div id="system" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">System Logs & Controls</h3>
+                </div>
+                
+                <div style="margin-bottom: 2rem; display: flex; gap: 1rem;">
+                    <button onclick="forceGc()" class="btn btn-warning" style="background-color: #fff7ed; color: #c2410c; border: 1px solid #fdba74;">
+                        <i class="fas fa-memory"></i> Force GC
+                    </button>
+                    <button onclick="alert('Cache cleared!')" class="btn btn-primary">
+                        <i class="fas fa-eraser"></i> Clear Cache
+                    </button>
+                    <button onclick="toggleMaintenance()" class="btn btn-danger">
+                        <i class="fas fa-ban"></i> Maintenance Mode
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Level</th>
+                                <th>Component</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <!-- JS Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modals -->
+    <div id="ec2Modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('ec2Modal')">&times;</span>
+            <h2 style="margin-top: 0; margin-bottom: 1.5rem;">EC2 Instance Details</h2>
+            <div class="detail-row">
+                <span class="detail-label">Instance ID</span>
+                <span class="detail-value" id="modalInstanceId">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Region</span>
+                <span class="detail-value" id="modalRegion">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Availability Zone</span>
+                <span class="detail-value" id="modalZone">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Public IP</span>
+                <span class="detail-value">54.12.34.56 (Mock)</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Instance Type</span>
+                <span class="detail-value">t2.micro</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">State</span>
+                <span class="detail-value" style="color: var(--accent-green);">running</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="rdsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('rdsModal')">&times;</span>
+            <h2 style="margin-top: 0; margin-bottom: 1.5rem;">RDS Database Status</h2>
+            <div class="detail-row">
+                <span class="detail-label">Engine</span>
+                <span class="detail-value">MySQL 8.0</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Endpoint</span>
+                <span class="detail-value">social-db.rds.amazonaws.com</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Active Connections</span>
+                <span class="detail-value" id="modalDbConnections">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">CPU Utilization</span>
+                <span class="detail-value">12%</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Free Storage</span>
+                <span class="detail-value">18.4 GB</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="aiModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('aiModal')">&times;</span>
+            <h2 style="margin-top: 0; margin-bottom: 1.5rem;">AI Worker Status</h2>
+            <div class="detail-row">
+                <span class="detail-label">Service Status</span>
+                <span class="detail-value" id="modalAiStatus">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Model</span>
+                <span class="detail-value">Gemini Pro</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Requests (24h)</span>
+                <span class="detail-value">1,245</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Avg Response Time</span>
+                <span class="detail-value">850ms</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Error Rate</span>
+                <span class="detail-value" style="color: var(--accent-green);">0.01%</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/auth-utils.js"></script>
+    <script src="../js/admin-dashboard.js"></script>
+</body>
+</html>

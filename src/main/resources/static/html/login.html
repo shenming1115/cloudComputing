@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../css/global.css">
     <link rel="stylesheet" href="../css/login.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
 </head>
 <body>
     <div class="auth-container">
@@ -24,14 +25,18 @@
             <!-- Login Form -->
             <form id="loginForm" class="auth-form active" onsubmit="handleLogin(event)">
                 <div class="input-group">
-                    <label for="loginUsername">Username</label>
-                    <input type="text" id="loginUsername" required placeholder="username">
+                    <label for="loginUsername">Email or Username</label>
+                    <input type="text" id="loginUsername" required placeholder="Enter your email or username">
                 </div>
                 <div class="input-group">
                     <label for="loginPassword">Password</label>
                     <input type="password" id="loginPassword" required placeholder="••••••••">
                 </div>
+                
+
+                
                 <button type="submit" class="btn btn-primary" style="width: 100%">Sign In</button>
+                
                 <div class="text-center mt-4">
                     <a href="#" style="font-size: 0.9rem; color: var(--text-secondary)">Forgot password?</a>
                 </div>
@@ -41,21 +46,31 @@
             <form id="registerForm" class="auth-form" onsubmit="handleRegister(event)">
                 <div class="input-group">
                     <label for="registerUsername">Username</label>
-                    <input type="text" id="registerUsername" required placeholder="username">
+                    <input type="text" id="registerUsername" required placeholder="Choose a username">
                 </div>
                 <div class="input-group">
                     <label for="registerEmail">Email</label>
-                    <input type="email" id="registerEmail" required placeholder="hello@example.com">
+                    <input type="email" id="registerEmail" required placeholder="your@email.com">
                 </div>
                 <div class="input-group">
                     <label for="registerPassword">Password</label>
-                    <input type="password" id="registerPassword" required placeholder="••••••••">
+                    <input type="password" id="registerPassword" required placeholder="At least 8 characters">
+                    <small style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Must contain: uppercase, lowercase, number, and special character (@#$%^&+=!)
+                    </small>
                 </div>
+                <div class="input-group">
+                    <label for="registerConfirmPassword">Confirm Password</label>
+                    <input type="password" id="registerConfirmPassword" required placeholder="Re-enter your password">
+                </div>
+                
+
+                
                 <button type="submit" class="btn btn-primary" style="width: 100%">Create Account</button>
             </form>
         </div>
     </div>
 
-    <script src="../js/login.js"></script>
+    <script src="../js/login.js?v=3"></script>
 </body>
 </html>

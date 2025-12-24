@@ -1,9 +1,12 @@
 package com.cloudapp.socialforum.controller;
 
 import com.cloudapp.socialforum.dto.CreatePostRequest;
+import com.cloudapp.socialforum.dto.PostDTO;
 import com.cloudapp.socialforum.dto.SharePostResponse;
 import com.cloudapp.socialforum.model.Post;
+import com.cloudapp.socialforum.model.User;
 import com.cloudapp.socialforum.service.PostService;
+import com.cloudapp.socialforum.service.S3Service;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -26,13 +31,27 @@ public class PostController {
     @Autowired
     private PostService postService;
 
+    @Autowired
+    private S3Service s3Service;
+
     @PostMapping
     public ResponseEntity<?> createPost(@Valid @RequestBody CreatePostRequest request) {
-        Post post = postService.createPost(
-            request.getContent(), 
-            request.getImageUrl(), 
-            request.getUserId()
-        );
+        Post post;
+        if (request.getVideoUrl() != null || request.getMediaType() != null) {
+            post = postService.createPost(
+                request.getContent(), 
+                request.getImageUrl(), 
+                request.getVideoUrl(),
+                request.getMediaType(),
+                request.getUserId()
+            );
+        } else {
+            post = postService.createPost(
+                request.getContent(), 
+                request.getImageUrl(), 
+                request.getUserId()
+            );
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(post);
     }
 
@@ -42,33 +61,64 @@ public class PostController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "false") boolean paginated) {
         
-        if (paginated) {
-            if (page < 0 || size < 1 || size > 100) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Invalid pagination parameters. Page must be >= 0, size must be between 1 and 100"));
+        try {
+            if (paginated) {
+                if (page < 0 || size < 1 || size > 100) {
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "Invalid pagination parameters. Page must be >= 0, size must be between 1 and 100"));
+                }
+                
+                Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+                Page<Post> postsPage = postService.getAllPostsPaginated(pageable);
+                
+                // Convert posts to DTOs with pre-signed URLs
+                List<PostDTO> postsWithUrls = postsPage.getContent().stream()
+                        .map(post -> {
+                            try {
+                                // Handle orphaned posts
+                                if (post.getUser() == null) {
+                                    User dummyUser = new User();
+                                    dummyUser.setId(-1L);
+                                    dummyUser.setUsername("Unknown User");
+                                    dummyUser.setRole("USER");
+                                    post.setUser(dummyUser);
+                                }
+                                return PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                            } catch (Exception e) {
+                                // Fallback if S3 fails
+                                try {
+                                    return PostDTO.fromPost(post);
+                                } catch (Exception ex) {
+                                    return null;
+                                }
+                            }
+                        })
+                        .filter(dto -> dto != null)
+                        .collect(java.util.stream.Collectors.toList());
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("posts", postsWithUrls);
+                response.put("currentPage", postsPage.getNumber());
+                response.put("totalPages", postsPage.getTotalPages());
+                response.put("totalElements", postsPage.getTotalElements());
+                response.put("hasNext", postsPage.hasNext());
+                response.put("hasPrevious", postsPage.hasPrevious());
+                
+                return ResponseEntity.ok(response);
+            } else {
+                List<PostDTO> posts = postService.getAllPostsDTO();
+                return ResponseEntity.ok(posts);
             }
-            
-            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-            Page<Post> postsPage = postService.getAllPostsPaginated(pageable);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("posts", postsPage.getContent());
-            response.put("currentPage", postsPage.getNumber());
-            response.put("totalPages", postsPage.getTotalPages());
-            response.put("totalElements", postsPage.getTotalElements());
-            response.put("hasNext", postsPage.hasNext());
-            response.put("hasPrevious", postsPage.hasPrevious());
-            
-            return ResponseEntity.ok(response);
-        } else {
-            List<Post> posts = postService.getAllPosts();
-            return ResponseEntity.ok(posts);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to load posts: " + e.getMessage()));
         }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getPostById(@PathVariable Long id) {
-        return postService.getPostById(id)
+        return postService.getPostDTOById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -121,13 +171,58 @@ public class PostController {
         return ResponseEntity.ok(posts);
     }
 
+    /**
+     * DELETE /api/posts/{id}
+     * RBAC: Admins can delete any post (content moderation)
+     *       Post owners can delete their own posts
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePost(@PathVariable Long id) {
-        if (!postService.getPostById(id).isPresent()) {
+        try {
+            // Get authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Authentication required"));
+            }
+
+            // Get current user from authentication principal
+            User currentUser = (User) authentication.getPrincipal();
+            
+            // Get the post
+            Post post = postService.getPostById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+            
+            // Authorization check: ADMIN can delete any post, users can delete their own
+            boolean isAdmin = currentUser.getRole().equals("ADMIN");
+            boolean isOwner = post.getUser() != null && post.getUser().getId().equals(currentUser.getId());
+            
+            if (!isAdmin && !isOwner) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                            "error", "Access denied",
+                            "message", "You can only delete your own posts unless you are an administrator."
+                        ));
+            }
+            
+            // Delete the post
+            postService.deletePost(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Post deleted successfully");
+            response.put("deletedBy", isAdmin ? "ADMIN" : "OWNER");
+            response.put("username", currentUser.getUsername());
+            response.put("postId", id);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Post not found with ID: " + id));
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to delete post: " + e.getMessage()));
         }
-        postService.deletePost(id);
-        return ResponseEntity.ok(Map.of("message", "Post deleted successfully"));
     }
 }

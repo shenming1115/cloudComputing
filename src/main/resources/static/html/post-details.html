@@ -12,26 +12,23 @@
 <body>
     <!-- Navbar -->
     <nav class="navbar">
-        <div class="container" style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+        <div class="container">
             <a href="index.html" class="nav-brand">SocialApp</a>
-            
             <div class="nav-links">
                 <a href="index.html" class="nav-item">Home</a>
                 <a href="search.html" class="nav-item">Explore</a>
                 <a href="profile.html" class="nav-item">Profile</a>
+                <a href="settings.html" class="nav-item">Settings</a>
             </div>
-
-            <div style="display: flex; gap: var(--spacing-md); align-items: center;">
-                <button class="btn btn-primary" onclick="window.location.href='index.html'">New Post</button>
-                <div class="user-avatar" id="navUserAvatar">U</div>
-                <button class="btn btn-secondary" onclick="logout()" style="padding: 4px 12px; font-size: 0.8rem;">Logout</button>
+            <div class="nav-actions">
+                <button class="btn-primary" onclick="logout()" style="font-size: 15px; padding: 10px 20px; font-weight: 600;">Log Out</button>
             </div>
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 80px; max-width: 800px;">
-        <div style="margin-bottom: var(--spacing-md);">
-            <a href="index.html" style="color: var(--text-secondary); display: flex; align-items: center; gap: var(--spacing-xs);">
+    <div class="container" style="margin-top: 80px; max-width: 680px;">
+        <div style="margin-bottom: 40px;">
+            <a href="index.html" style="color: var(--text-secondary); display: flex; align-items: center; gap: 8px; font-weight: 500; transition: color 0.2s ease;" onmouseover="this.style.color='var(--primary-blue)'" onmouseout="this.style.color='var(--text-secondary)'">
                 <span>←</span> Back to Feed
             </a>
         </div>
@@ -39,25 +36,25 @@
         <!-- Main Post Container -->
         <div id="postContainer">
             <!-- Post content will be loaded here -->
-            <div class="text-center" style="padding: 40px;">Loading post...</div>
+            <div class="text-center" style="padding: 40px; color: var(--text-secondary);">Loading post...</div>
         </div>
 
         <!-- Comments Section -->
-        <div class="card" style="margin-top: var(--spacing-lg);">
-            <h3 style="margin-bottom: var(--spacing-lg);">Comments</h3>
+        <div style="margin-top: 60px;">
+            <h3 style="font-size: 24px; font-weight: 600; margin-bottom: 32px;">Comments</h3>
             
             <div class="comment-input-container">
-                <div class="user-avatar">U</div>
+                <div class="user-avatar" id="commentUserAvatar">U</div>
                 <div style="flex: 1;">
-                    <textarea id="commentInput" class="comment-input" placeholder="Write a comment..."></textarea>
-                    <div style="display: flex; justify-content: flex-end; margin-top: var(--spacing-sm);">
-                        <button class="btn btn-primary" onclick="submitComment()">Post Comment</button>
+                    <textarea id="commentInput" class="comment-input" placeholder="Add a comment..."></textarea>
+                    <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+                        <button id="submitCommentBtn" class="btn btn-primary" onclick="submitComment()" style="font-size: 15px; padding: 10px 24px; font-weight: 600;">Post Comment</button>
                     </div>
                 </div>
             </div>
 
             <div id="commentsList" class="comments-list">
-                <!-- Comments will be loaded here -->
+                <!-- Comments will be injected here -->
             </div>
         </div>
     </div>

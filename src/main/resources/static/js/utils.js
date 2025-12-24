@@ -1,12 +1,12 @@
 /**
  * Security Utility Functions
- * 用于防止 XSS 攻击和其他安全问题
+ * Prevents XSS attacks and other security issues
  */
 
 /**
- * 转义 HTML 特殊字符，防止 XSS 攻击
- * @param {string} text - 需要转义的文本
- * @returns {string} - 转义后的安全文本
+ * Escape HTML special characters to prevent XSS attacks
+ * @param {string} text - Text to escape
+ * @returns {string} - Escaped safe text
  */
 function escapeHtml(text) {
     if (!text) return '';
@@ -17,24 +17,24 @@ function escapeHtml(text) {
 }
 
 /**
- * 安全地渲染用户内容（支持换行）
- * @param {string} content - 用户输入的内容
- * @returns {string} - 安全的 HTML 字符串
+ * Safely render user content (supports line breaks)
+ * @param {string} content - User input content
+ * @returns {string} - Safe HTML string
  */
 function sanitizeContent(content) {
     if (!content) return '';
     
-    // 转义 HTML 标签
+    // Escape HTML tags
     const escaped = escapeHtml(content);
     
-    // 保留换行符（转换为 <br>）
+    // Preserve line breaks (convert to <br>)
     return escaped.replace(/\n/g, '<br>');
 }
 
 /**
- * 验证 URL 是否安全（防止 javascript: 等协议）
- * @param {string} url - 需要验证的 URL
- * @returns {boolean} - 是否安全
+ * Validate URL safety (prevents javascript: protocol and others)
+ * @param {string} url - URL to validate
+ * @returns {boolean} - Whether URL is safe
  */
 function isSafeUrl(url) {
     if (!url) return false;
@@ -49,14 +49,14 @@ function isSafeUrl(url) {
 }
 
 /**
- * 格式化时间戳
- * @param {string|Date} timestamp - 时间戳
- * @returns {string} - 格式化后的时间
+ * Format timestamp to human-readable string
+ * @param {string|Date} timestamp - Timestamp to format
+ * @returns {string} - Formatted time string
  */
 function formatTimestamp(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
-    const diff = Math.floor((now - date) / 1000); // 秒
+    const diff = Math.floor((now - date) / 1000); // seconds
 
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
@@ -67,10 +67,10 @@ function formatTimestamp(timestamp) {
 }
 
 /**
- * 限制字符串长度
- * @param {string} text - 原始文本
- * @param {number} maxLength - 最大长度
- * @returns {string} - 截断后的文本
+ * Truncate text to maximum length
+ * @param {string} text - Original text
+ * @param {number} maxLength - Maximum length
+ * @returns {string} - Truncated text with ellipsis
  */
 function truncateText(text, maxLength) {
     if (!text || text.length <= maxLength) return text;

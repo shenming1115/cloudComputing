@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: social-forum
+  
+  # H2 In-Memory Database for Testing
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+  
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+# AWS S3 Configuration for Testing
+aws:
+  region: ap-southeast-2
+  s3:
+    bucket-name: social-forum-artifacts
+
+server:
+  port: 8080
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.cloudapp.socialforum: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG

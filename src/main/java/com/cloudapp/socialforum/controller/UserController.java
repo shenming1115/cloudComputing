@@ -1,8 +1,11 @@
 package com.cloudapp.socialforum.controller;
 
+import com.cloudapp.socialforum.dto.AuthResponse;
 import com.cloudapp.socialforum.dto.LoginRequest;
 import com.cloudapp.socialforum.dto.RegisterRequest;
 import com.cloudapp.socialforum.model.User;
+import com.cloudapp.socialforum.security.JwtTokenProvider;
+import com.cloudapp.socialforum.service.S3Service;
 import com.cloudapp.socialforum.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -20,37 +24,76 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private S3Service s3Service;
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
-        User user = userService.registerUser(
-            request.getUsername(), 
-            request.getEmail(), 
-            request.getPassword()
-        );
+        try {
+            User user = userService.registerUser(
+                request.getUsername(), 
+                request.getEmail(), 
+                request.getPassword()
+            );
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", user.getId());
-            response.put("username", user.getUsername());
-            response.put("email", user.getEmail());
-            response.put("createdAt", user.getCreatedAt());
+            // Generate JWT token for newly registered user
+            String token = jwtTokenProvider.generateToken(user.getUsername(), user.getRole());
+            
+            AuthResponse response = new AuthResponse(
+                token,
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                "Registration successful"
+            );
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        if (userService.validateUser(request.getUsername(), request.getPassword())) {
-            User user = userService.findByUsername(request.getUsername()).get();
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", user.getId());
-            response.put("username", user.getUsername());
-            response.put("message", "Login successful");
-            
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid credentials"));
+        // Support login with username or email
+        String identifier = request.getUsername();
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Username or email is required"));
         }
+
+        if (userService.validateUser(identifier, request.getPassword())) {
+            Optional<User> userOpt = userService.findByUsername(identifier);
+            if (!userOpt.isPresent()) {
+                userOpt = userService.findByEmail(identifier);
+            }
+            
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                
+                // Generate JWT token
+                String token = jwtTokenProvider.generateToken(user.getUsername(), user.getRole());
+                
+                AuthResponse response = new AuthResponse(
+                    token,
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getRole(),
+                    "Login successful"
+                );
+                
+                return ResponseEntity.ok(response);
+            }
+        }
+        
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Invalid credentials"));
     }
 
     @GetMapping("/{id}")
@@ -60,10 +103,26 @@ public class UserController {
                     Map<String, Object> response = new HashMap<>();
                     response.put("id", user.getId());
                     response.put("username", user.getUsername());
-                    response.put("email", user.getEmail());
+                    
+                    // Generate pre-signed URL for avatar if exists
+                    String avatarUrl = user.getAvatarUrl();
+                    if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                        avatarUrl = s3Service.generatePresignedDownloadUrl(avatarUrl);
+                    }
+                    response.put("avatarUrl", avatarUrl);
+                    
+                    response.put("role", user.getRole());
+                    response.put("bio", user.getBio());
+                    response.put("avatarUrl", user.getAvatarUrl());
                     response.put("createdAt", user.getCreatedAt());
                     return ResponseEntity.ok(response);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchUsers(@RequestParam String query) {
+        return ResponseEntity.ok(userService.findByUsername(query));
+    }
 }
+
