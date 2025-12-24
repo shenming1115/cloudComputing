@@ -70,30 +70,10 @@ public class PostController {
             }
             
             Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-            Page<Post> postsPage = postService.getAllPostsPaginated(pageable);
+            Page<PostDTO> postsPage = postService.getAllPostsPaginatedDTO(pageable);
             
-            // Convert posts to DTOs with pre-signed URLs
+            // Filter out any null DTOs if conversion failed completely
             List<PostDTO> postsWithUrls = postsPage.getContent().stream()
-                    .map(post -> {
-                        try {
-                            // Handle orphaned posts
-                            if (post.getUser() == null) {
-                                User dummyUser = new User();
-                                dummyUser.setId(-1L);
-                                dummyUser.setUsername("Unknown User");
-                                dummyUser.setRole("USER");
-                                post.setUser(dummyUser);
-                            }
-                            return PostDTO.fromPostWithPresignedUrls(post, s3Service);
-                        } catch (Exception e) {
-                            // Fallback if S3 fails
-                            try {
-                                return PostDTO.fromPost(post);
-                            } catch (Exception ex) {
-                                return null;
-                            }
-                        }
-                    })
                     .filter(dto -> dto != null)
                     .collect(java.util.stream.Collectors.toList());
             
@@ -162,8 +142,8 @@ public class PostController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Post>> getPostsByUserId(@PathVariable Long userId) {
-        List<Post> posts = postService.getPostsByUserId(userId);
+    public ResponseEntity<List<PostDTO>> getPostsByUserId(@PathVariable Long userId) {
+        List<PostDTO> posts = postService.getPostsDTOByUserId(userId);
         return ResponseEntity.ok(posts);
     }
 

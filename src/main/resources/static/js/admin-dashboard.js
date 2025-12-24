@@ -1,3 +1,4 @@
+console.log("Admin Dashboard JS Loaded - Version 2 (Pagination Fix)");
 document.addEventListener('DOMContentLoaded', () => {
     checkAdminAuth();
     
@@ -219,11 +220,19 @@ async function loadPosts() {
     try {
         const res = await authFetch('/api/posts'); 
         if (res.ok) {
-            const posts = await res.json();
+            const data = await res.json();
+            // Handle paginated response structure { posts: [], currentPage: 0, ... }
+            const postsArray = Array.isArray(data) ? data : (data.posts || []);
+            
             const tbody = document.getElementById('postsTableBody');
             if (!tbody) return;
 
-            tbody.innerHTML = posts.map(post => `
+            if (postsArray.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #6b7280;">No posts found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = postsArray.map(post => `
                 <tr>
                     <td>#${post.id}</td>
                     <td>
@@ -234,7 +243,7 @@ async function loadPosts() {
                             <span style="font-weight: 500;">${post.user ? post.user.username : 'Unknown'}</span>
                         </div>
                     </td>
-                    <td>${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}</td>
+                    <td>${post.content ? (post.content.substring(0, 50) + (post.content.length > 50 ? '...' : '')) : ''}</td>
                     <td>
                         ${post.imageUrl ? 
                             `<a href="${post.imageUrl}" target="_blank" style="color: #3b82f6; display: flex; align-items: center; gap: 0.5rem;">

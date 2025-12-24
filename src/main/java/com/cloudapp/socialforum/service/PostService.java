@@ -109,20 +109,29 @@ public class PostService {
             return posts.stream()
                     .map(post -> {
                         try {
-                            // Handle orphaned posts (null user)
-                            if (post.getUser() == null) {
+                            PostDTO dto = PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                            // Handle orphaned posts (null user) - Modify DTO only, not Entity
+                            if (dto.getUser() == null) {
                                 User dummyUser = new User();
                                 dummyUser.setId(-1L);
                                 dummyUser.setUsername("Unknown User");
                                 dummyUser.setRole("USER");
-                                post.setUser(dummyUser);
+                                dto.setUser(dummyUser);
                             }
-                            return PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                            return dto;
                         } catch (Exception e) {
                             logger.error("Error converting post {} to DTO: {}", post.getId(), e.getMessage());
                             // Fallback: Return DTO without presigned URLs if S3 fails
                             try {
-                                return PostDTO.fromPost(post);
+                                PostDTO dto = PostDTO.fromPost(post);
+                                if (dto.getUser() == null) {
+                                    User dummyUser = new User();
+                                    dummyUser.setId(-1L);
+                                    dummyUser.setUsername("Unknown User");
+                                    dummyUser.setRole("USER");
+                                    dto.setUser(dummyUser);
+                                }
+                                return dto;
                             } catch (Exception ex) {
                                 return null;
                             }
@@ -139,20 +148,66 @@ public class PostService {
     public Page<Post> getAllPostsPaginated(Pageable pageable) {
         logger.info("Fetching paginated posts - page: {}, size: {}", 
             pageable.getPageNumber(), pageable.getPageSize());
-        Page<Post> page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
-        
-        // Handle orphaned posts (null user)
-        page.getContent().forEach(post -> {
-            if (post.getUser() == null) {
-                User dummyUser = new User();
-                dummyUser.setId(-1L);
-                dummyUser.setUsername("Unknown User");
-                dummyUser.setRole("USER");
-                post.setUser(dummyUser);
+        return postRepository.findAllByOrderByCreatedAtDesc(pageable);
+    }
+
+    public Page<PostDTO> getAllPostsPaginatedDTO(Pageable pageable) {
+        Page<Post> postsPage = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return postsPage.map(post -> {
+            try {
+                // Force initialization of User to catch EntityNotFoundException if user is missing in DB
+                if (post.getUser() != null) {
+                    post.getUser().getUsername();
+                }
+                
+                PostDTO dto = PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                if (dto.getUser() == null) {
+                    User dummyUser = new User();
+                    dummyUser.setId(-1L);
+                    dummyUser.setUsername("Unknown User");
+                    dummyUser.setRole("USER");
+                    dto.setUser(dummyUser);
+                }
+                return dto;
+            } catch (Exception e) {
+                logger.error("Error converting post {} to DTO: {}", post.getId(), e.getMessage());
+                // If User is missing (EntityNotFoundException), create a dummy user DTO
+                try {
+                    PostDTO dto = new PostDTO();
+                    dto.setId(post.getId());
+                    dto.setContent(post.getContent());
+                    dto.setImageUrl(post.getImageUrl());
+                    dto.setVideoUrl(post.getVideoUrl());
+                    dto.setMediaType(post.getMediaType());
+                    dto.setShareToken(post.getShareToken());
+                    dto.setShareCount(post.getShareCount());
+                    dto.setCreatedAt(post.getCreatedAt());
+                    
+                    // Set dummy user
+                    User dummyUser = new User();
+                    dummyUser.setId(-1L);
+                    dummyUser.setUsername("Unknown User");
+                    dummyUser.setRole("USER");
+                    dto.setUser(dummyUser);
+                    
+                    // Safe counts
+                    dto.setCommentsCount(0);
+                    dto.setLikesCount(0);
+                    
+                    // Try to get presigned URLs
+                    if (dto.getImageUrl() != null && !dto.getImageUrl().isEmpty()) {
+                        dto.setImageUrl(s3Service.generatePresignedDownloadUrl(dto.getImageUrl()));
+                    }
+                    if (dto.getVideoUrl() != null && !dto.getVideoUrl().isEmpty()) {
+                        dto.setVideoUrl(s3Service.generatePresignedDownloadUrl(dto.getVideoUrl()));
+                    }
+                    
+                    return dto;
+                } catch (Exception ex) {
+                    return null;
+                }
             }
         });
-        
-        return page;
     }
 
     public Optional<Post> getPostById(Long id) {
@@ -161,7 +216,22 @@ public class PostService {
 
     public Optional<PostDTO> getPostDTOById(Long id) {
         return postRepository.findById(id)
-                .map(post -> PostDTO.fromPostWithPresignedUrls(post, s3Service));
+                .map(post -> {
+                    try {
+                        PostDTO dto = PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                        if (dto.getUser() == null) {
+                            User dummyUser = new User();
+                            dummyUser.setId(-1L);
+                            dummyUser.setUsername("Unknown User");
+                            dummyUser.setRole("USER");
+                            dto.setUser(dummyUser);
+                        }
+                        return dto;
+                    } catch (Exception e) {
+                        logger.error("Error converting post {} to DTO: {}", post.getId(), e.getMessage());
+                        return null;
+                    }
+                });
     }
 
     public Optional<Post> getPostByShareToken(String shareToken) {
@@ -200,6 +270,33 @@ public class PostService {
 
     public List<Post> getPostsByUserId(Long userId) {
         return postRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    public List<PostDTO> getPostsDTOByUserId(Long userId) {
+        List<Post> posts = postRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        return posts.stream()
+                .map(post -> {
+                    try {
+                        // Force initialization of User
+                        if (post.getUser() != null) {
+                            post.getUser().getUsername();
+                        }
+                        
+                        PostDTO dto = PostDTO.fromPostWithPresignedUrls(post, s3Service);
+                        if (dto.getUser() == null) {
+                             User dummyUser = new User();
+                             dummyUser.setId(userId);
+                             dummyUser.setUsername("Unknown User"); 
+                             dto.setUser(dummyUser);
+                        }
+                        return dto;
+                    } catch (Exception e) {
+                        logger.error("Error converting post {} to DTO: {}", post.getId(), e.getMessage());
+                        return null;
+                    }
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     @Transactional

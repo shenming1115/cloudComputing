@@ -14,8 +14,9 @@ spring:
       max-lifetime: 1800000
   
   jpa:
+    defer-datasource-initialization: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
@@ -29,7 +30,7 @@ aws:
   s3:
     bucket-name: ${s3.bucket-name}
   cloudfront:
-    domain: ${cloudfront.domain}
+    domain: ${cloudfront.domain:d3esrdnqsl7nsk.cloudfront.net}
 
 turnstile:
   secret-key: ${turnstile.secret}
