@@ -11,12 +11,49 @@ const createPostCard = document.querySelector('.create-post-card');
 // State
 let isLoggedIn = false;
 let currentUser = null;
+let selectedFile = null;
+let selectedMediaType = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
     renderPosts();
 });
+
+function handleFileSelect(input, type) {
+    if (input.files && input.files[0]) {
+        selectedFile = input.files[0];
+        selectedMediaType = type;
+        
+        const fileNameDisplay = document.getElementById('selectedFileName');
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = `Selected: ${selectedFile.name} (${type})`;
+            fileNameDisplay.style.color = '#4f46e5';
+        }
+    }
+}
+
+async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const endpoint = selectedMediaType === 'image' ? '/api/upload/image' : '/api/upload/video';
+    
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: formData
+    });
+    
+    if (!response.ok) {
+        throw new Error('File upload failed');
+    }
+    
+    const data = await response.json();
+    return data.url;
+}
 
 function checkLoginStatus() {
     const token = localStorage.getItem('authToken');
@@ -282,6 +319,9 @@ async function renderPosts() {
                         role: user.role || 'USER'
                     },
                     content: post.content,
+                    imageUrl: post.imageUrl,
+                    videoUrl: post.videoUrl,
+                    mediaType: post.mediaType,
                     timestamp: new Date(post.createdAt).toLocaleString(),
                     likes: post.likesCount || 0,
                     comments: post.commentsCount || 0
@@ -329,6 +369,20 @@ function createPostHTML(post) {
             `;
         }
     }
+
+    // Media Content
+    let mediaContent = '';
+    if (post.imageUrl) {
+        mediaContent = `<div class="post-media"><img src="${post.imageUrl}" alt="Post image" style="width: 100%; border-radius: 8px; margin-top: 10px;"></div>`;
+    } else if (post.videoUrl) {
+        mediaContent = `
+            <div class="post-media">
+                <video controls style="width: 100%; border-radius: 8px; margin-top: 10px;">
+                    <source src="${post.videoUrl}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>`;
+    }
     
     return `
         <article class="card post-card" id="post-${post.id}">
@@ -343,6 +397,7 @@ function createPostHTML(post) {
             <div class="post-content">
                 ${safeContent}
             </div>
+            ${mediaContent}
             <div class="post-actions">
                 <button class="action-btn" onclick="handleLike(${post.id})">
                     <span>♥</span> ${post.likes}
@@ -380,17 +435,46 @@ async function submitPost() {
     }
     
     const content = postContentInput.value.trim();
-    if (!content) return;
+    if (!content && !selectedFile) {
+        alert('Please enter some content or select a file.');
+        return;
+    }
+
+    const submitBtn = document.querySelector('button[onclick="submitPost()"]');
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Posting...';
 
     try {
+        let mediaUrl = null;
+        
+        if (selectedFile) {
+            submitBtn.textContent = 'Uploading Media...';
+            try {
+                mediaUrl = await uploadFile(selectedFile);
+            } catch (uploadError) {
+                console.error('Upload error:', uploadError);
+                alert('Failed to upload media: ' + uploadError.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
+            }
+        }
+
+        submitBtn.textContent = 'Creating Post...';
+        
+        const postData = {
+            content: content,
+            userId: currentUser.id,
+            imageUrl: selectedMediaType === 'image' ? mediaUrl : null,
+            videoUrl: (selectedMediaType === 'video' || selectedMediaType === 'reel') ? mediaUrl : null,
+            mediaType: selectedMediaType ? selectedMediaType.toUpperCase() : null
+        };
+
         const response = await fetch('/api/posts', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({
-                content: content,
-                userId: currentUser.id,
-                imageUrl: null
-            })
+            body: JSON.stringify(postData)
         });
 
         if (response.status === 401) {
@@ -402,6 +486,11 @@ async function submitPost() {
         if (response.ok) {
             renderPosts();
             closeCreatePostModal();
+            // Reset state
+            selectedFile = null;
+            selectedMediaType = null;
+            const fileNameDisplay = document.getElementById('selectedFileName');
+            if (fileNameDisplay) fileNameDisplay.textContent = '';
         } else {
             const error = await response.json();
             alert('Failed to create post: ' + (error.message || error.error || 'Unknown error'));
@@ -409,15 +498,43 @@ async function submitPost() {
     } catch (error) {
         console.error('Error:', error);
         alert('Error creating post');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
     }
 }
 
-function handleLike(postId) {
+async function handleLike(postId) {
     if (!isLoggedIn) {
         window.location.href = 'login.html';
         return;
     }
-    alert('Like feature not implemented in backend yet.');
+
+    const btn = document.querySelector(`#post-${postId} .action-btn[onclick="handleLike(${postId})"]`);
+    const originalContent = btn.innerHTML;
+    
+    try {
+        const response = await fetch(`/api/posts/${postId}/likes?userId=${currentUser.id}`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            // Update like count and style
+            const likeCount = data.likeCount !== undefined ? data.likeCount : data.likes;
+            const isLiked = data.liked; // Assuming backend returns this
+            
+            btn.innerHTML = `<span style="${isLiked ? 'color: #e74c3c;' : ''}">♥</span> ${likeCount}`;
+            if (isLiked) {
+                btn.classList.add('liked');
+            } else {
+                btn.classList.remove('liked');
+            }
+        }
+    } catch (error) {
+        console.error('Error liking post:', error);
+    }
 }
 
 function handleComment(postId) {
@@ -478,12 +595,21 @@ function deletePost(postId) {
         })
         .then(data => {
             if (data.shareUrl) {
-                prompt("Copy this link to share:", data.shareUrl);
+                // Try to copy to clipboard automatically
+                navigator.clipboard.writeText(data.shareUrl).then(() => {
+                    alert("Link copied to clipboard: " + data.shareUrl);
+                }).catch(() => {
+                    // Fallback
+                    prompt("Copy this link to share:", data.shareUrl);
+                });
             } else {
-                alert('Could not generate share link');
+                alert('Could not generate share link: ' + (data.message || data.error || 'Unknown error'));
             }
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+            console.error(err);
+            alert('Error sharing post: ' + err.message);
+        });
 }
 
 // Close modal when clicking outside

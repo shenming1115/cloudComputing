@@ -14,13 +14,25 @@ document.addEventListener('DOMContentLoaded', () => {
 function checkLoginStatus() {
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('userData');
-    if (!token || !userData) {
+    const legacyUser = localStorage.getItem('user');
+    
+    if (!token || (!userData && !legacyUser)) {
         window.location.href = 'login.html';
     }
 }
 
+function getUserData() {
+    const userData = localStorage.getItem('userData');
+    if (userData) return JSON.parse(userData);
+    
+    const legacyUser = localStorage.getItem('user');
+    if (legacyUser) return JSON.parse(legacyUser);
+    
+    return null;
+}
+
 function updateUserAvatar() {
-    const user = JSON.parse(localStorage.getItem('userData'));
+    const user = getUserData();
     if (user && user.username) {
         const avatar = user.username.charAt(0).toUpperCase();
         const avatarElement = document.getElementById('commentUserAvatar');
@@ -119,7 +131,18 @@ async function loadComments() {
     if (!postId) return;
 
     try {
-        const response = await fetch(`/api/comments/post/${postId}`);
+        const token = localStorage.getItem('authToken');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`/api/comments/post/${postId}`, {
+            headers: headers
+        });
+
         if (response.ok) {
             const comments = await response.json();
             if (comments.length === 0) {
@@ -160,13 +183,20 @@ function createCommentHTML(comment) {
 }
 
 async function submitComment() {
+    console.log('submitComment called');
     const content = commentInput.value.trim();
-    if (!content) return;
+    if (!content) {
+        console.log('Content is empty');
+        return;
+    }
 
     const postId = getPostIdFromUrl();
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = getUserData();
 
-    if (!user || !postId) return;
+    if (!user || !postId) {
+        alert('Please login to comment');
+        return;
+    }
 
     const commentData = {
         content: content,
@@ -174,50 +204,78 @@ async function submitComment() {
         userId: user.id
     };
 
+    const submitBtn = document.getElementById('submitCommentBtn');
+    let originalText = 'Post Comment';
+    
+    if (submitBtn) {
+        originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Posting...';
+    } else {
+        console.warn('Submit button not found');
+    }
+
     try {
+        const token = localStorage.getItem('authToken');
+        console.log('Sending comment request...');
         const response = await fetch('/api/comments', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(commentData)
         });
 
         if (response.ok) {
+            console.log('Comment posted successfully');
             commentInput.value = '';
             await loadComments(); // Reload comments
             await loadPostDetails(); // Reload post to update comment count
         } else {
-            alert('Failed to post comment');
+            const err = await response.json();
+            console.error('Failed to post comment:', err);
+            alert('Failed to post comment: ' + (err.message || err.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error posting comment:', error);
-        alert('Error posting comment');
+        alert('Error posting comment: ' + error.message);
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
     }
 }
 
 async function sharePost(postId) {
     try {
+        const token = localStorage.getItem('authToken');
         const response = await fetch(`/api/posts/${postId}/share`, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
         
         if (response.ok) {
             const data = await response.json();
-            // Copy to clipboard
-            navigator.clipboard.writeText(data.shareUrl).then(() => {
-                alert('Share link copied to clipboard!');
-            });
+            if (data.shareUrl) {
+                navigator.clipboard.writeText(data.shareUrl).then(() => {
+                    alert('Share link copied to clipboard: ' + data.shareUrl);
+                }).catch(() => {
+                    prompt("Copy this link to share:", data.shareUrl);
+                });
+            } else {
+                alert('Failed to generate share link: ' + (data.message || 'Unknown error'));
+            }
         } else {
-            alert('Failed to generate share link');
+            const err = await response.json().catch(() => ({}));
+            alert('Failed to generate share link: ' + (err.message || err.error || response.statusText));
         }
     } catch (error) {
         console.error('Error sharing post:', error);
-        alert('Error sharing post');
+        alert('Error sharing post: ' + error.message);
     }
 }
-
-    MOCK_COMMENTS.unshift(newComment);
-    loadComments();
-    commentInput.value = '';
 

@@ -100,13 +100,25 @@ public class PostService {
                 return java.util.Collections.emptyList();
             }
             return posts.stream()
-                    .filter(post -> post != null && post.getUser() != null) // Filter out orphaned posts
                     .map(post -> {
                         try {
+                            // Handle orphaned posts (null user)
+                            if (post.getUser() == null) {
+                                User dummyUser = new User();
+                                dummyUser.setId(-1L);
+                                dummyUser.setUsername("Unknown User");
+                                dummyUser.setRole("USER");
+                                post.setUser(dummyUser);
+                            }
                             return PostDTO.fromPostWithPresignedUrls(post, s3Service);
                         } catch (Exception e) {
                             logger.error("Error converting post {} to DTO: {}", post.getId(), e.getMessage());
-                            return null;
+                            // Fallback: Return DTO without presigned URLs if S3 fails
+                            try {
+                                return PostDTO.fromPost(post);
+                            } catch (Exception ex) {
+                                return null;
+                            }
                         }
                     })
                     .filter(dto -> dto != null)

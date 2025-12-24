@@ -71,6 +71,7 @@ public class JwtSecurityConfig {
                     "/api/posts/{id}",
                     "/api/posts/shared/**",
                     "/api/posts/user/**",
+                    "/api/comments/post/**",
                     "/api/search/**",
                     "/api/ai/**",
                     "/health",

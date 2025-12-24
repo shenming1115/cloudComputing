@@ -8,6 +8,8 @@ import com.cloudapp.socialforum.repository.UserRepository;
 import com.cloudapp.socialforum.repository.CommentRepository;
 import com.cloudapp.socialforum.service.S3Service;
 import com.cloudapp.socialforum.service.UserService;
+import com.cloudapp.socialforum.service.PostService;
+import com.cloudapp.socialforum.dto.PostDTO;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +36,9 @@ public class AdminController {
 
     @Autowired
     private CommentRepository commentRepository;
+
+    @Autowired
+    private PostService postService;
 
     @Autowired
     private S3Service s3Service;
@@ -92,8 +97,8 @@ public class AdminController {
     // --- Post Management ---
     @GetMapping("/posts")
     public ResponseEntity<?> getAllPosts() {
-        List<Post> posts = postRepository.findAll();
-        // Map to DTO
+        // Use Service DTO to ensure consistency and handle orphaned posts/S3 URLs
+        List<PostDTO> posts = postService.getAllPostsDTO();
         return ResponseEntity.ok(posts);
     }
 
@@ -183,11 +188,13 @@ public class AdminController {
 
     @GetMapping("/s3/files")
     public ResponseEntity<?> listS3Files() {
-        List<String> files = s3Service.listObjects();
-        List<Map<String, String>> fileDtos = files.stream().map(key -> {
-            Map<String, String> map = new HashMap<>();
-            map.put("key", key);
-            map.put("url", s3Service.generatePresignedDownloadUrl(key));
+        List<software.amazon.awssdk.services.s3.model.S3Object> files = s3Service.listObjects();
+        List<Map<String, Object>> fileDtos = files.stream().map(s3Object -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("key", s3Object.key());
+            map.put("size", s3Object.size());
+            map.put("lastModified", s3Object.lastModified().toString());
+            map.put("url", s3Service.generatePresignedDownloadUrl(s3Object.key()));
             return map;
         }).collect(Collectors.toList());
         return ResponseEntity.ok(fileDtos);
@@ -206,7 +213,10 @@ public class AdminController {
     @PostMapping("/s3/sync")
     public ResponseEntity<?> syncS3() {
         // 1. Get all files from S3
-        List<String> s3Files = s3Service.listObjects();
+        List<software.amazon.awssdk.services.s3.model.S3Object> s3Objects = s3Service.listObjects();
+        List<String> s3Files = s3Objects.stream()
+                .map(software.amazon.awssdk.services.s3.model.S3Object::key)
+                .collect(Collectors.toList());
         
         // 2. Get all image URLs from DB
         List<Post> posts = postRepository.findAll();

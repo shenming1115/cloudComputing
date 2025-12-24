@@ -94,9 +94,9 @@ public class AIAssistantService {
      * @return AI response text
      */
     public Mono<String> getAIResponse(String userMessage, String username) {
-        // Demo Mode: Simple JSON with only userMessage field
+        // Demo Mode: Simple JSON with only message field (Worker expects "message")
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("userMessage", userMessage);
+        requestBody.put("message", userMessage);
 
         // No authentication headers - Demo Mode
         return webClient.post()

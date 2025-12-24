@@ -191,7 +191,7 @@ public class S3Service {
     /**
      * List objects in the S3 bucket
      */
-    public java.util.List<String> listObjects() {
+    public java.util.List<software.amazon.awssdk.services.s3.model.S3Object> listObjects() {
         try {
             software.amazon.awssdk.services.s3.model.ListObjectsV2Request request = 
                 software.amazon.awssdk.services.s3.model.ListObjectsV2Request.builder()
@@ -200,9 +200,7 @@ public class S3Service {
             
             software.amazon.awssdk.services.s3.model.ListObjectsV2Response response = s3Client.listObjectsV2(request);
             
-            return response.contents().stream()
-                    .map(software.amazon.awssdk.services.s3.model.S3Object::key)
-                    .collect(java.util.stream.Collectors.toList());
+            return response.contents();
         } catch (Exception e) {
             logger.error("Failed to list objects in S3: {}", e.getMessage());
             return java.util.Collections.emptyList();

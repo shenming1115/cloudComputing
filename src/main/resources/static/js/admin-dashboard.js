@@ -229,9 +229,9 @@ async function loadPosts() {
                     <td>
                         <div style="display: flex; align-items: center; gap: 0.75rem;">
                             <div style="width: 32px; height: 32px; background: #e0e7ff; color: #4f46e5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                                ${post.authorName ? post.authorName.charAt(0).toUpperCase() : 'U'}
+                                ${post.user && post.user.username ? post.user.username.charAt(0).toUpperCase() : 'U'}
                             </div>
-                            <span style="font-weight: 500;">${post.authorName || 'Unknown'}</span>
+                            <span style="font-weight: 500;">${post.user ? post.user.username : 'Unknown'}</span>
                         </div>
                     </td>
                     <td>${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}</td>
@@ -285,10 +285,13 @@ async function loadS3Files() {
             }
 
             tbody.innerHTML = files.map(file => {
-                // Mock data for display since API only returns key/url
-                const size = (Math.random() * 5 + 0.5).toFixed(1) + ' MB';
+                // Real data from API
+                const sizeBytes = file.size || 0;
+                const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(1);
+                const sizeDisplay = sizeMB + ' MB';
+                
                 const type = file.key.split('.').pop().toUpperCase();
-                const date = new Date(Date.now() - Math.random() * 1000000000).toLocaleDateString();
+                const date = file.lastModified ? new Date(file.lastModified).toLocaleString() : 'N/A';
                 
                 return `
                 <tr>
@@ -300,7 +303,7 @@ async function loadS3Files() {
                             <span style="font-weight: 500; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.key}">${file.key}</span>
                         </div>
                     </td>
-                    <td style="color: #6b7280;">${size}</td>
+                    <td style="color: #6b7280;">${sizeDisplay}</td>
                     <td><span class="badge badge-warning">${type}</span></td>
                     <td style="color: #6b7280;">${date}</td>
                     <td>

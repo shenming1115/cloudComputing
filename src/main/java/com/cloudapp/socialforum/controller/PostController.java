@@ -72,14 +72,25 @@ public class PostController {
                 Page<Post> postsPage = postService.getAllPostsPaginated(pageable);
                 
                 // Convert posts to DTOs with pre-signed URLs
-                // Filter out posts with null users to prevent NullPointerException
                 List<PostDTO> postsWithUrls = postsPage.getContent().stream()
-                        .filter(post -> post.getUser() != null)
                         .map(post -> {
                             try {
+                                // Handle orphaned posts
+                                if (post.getUser() == null) {
+                                    User dummyUser = new User();
+                                    dummyUser.setId(-1L);
+                                    dummyUser.setUsername("Unknown User");
+                                    dummyUser.setRole("USER");
+                                    post.setUser(dummyUser);
+                                }
                                 return PostDTO.fromPostWithPresignedUrls(post, s3Service);
                             } catch (Exception e) {
-                                return null;
+                                // Fallback if S3 fails
+                                try {
+                                    return PostDTO.fromPost(post);
+                                } catch (Exception ex) {
+                                    return null;
+                                }
                             }
                         })
                         .filter(dto -> dto != null)
