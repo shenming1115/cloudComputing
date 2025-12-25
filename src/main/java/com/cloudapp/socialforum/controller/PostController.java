@@ -62,57 +62,33 @@ public class PostController {
             @RequestParam(defaultValue = "false") boolean paginated) {
         
         try {
-            if (paginated) {
-                if (page < 0 || size < 1 || size > 100) {
-                    return ResponseEntity.badRequest()
-                            .body(Map.of("error", "Invalid pagination parameters. Page must be >= 0, size must be between 1 and 100"));
-                }
-                
-                Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-                Page<Post> postsPage = postService.getAllPostsPaginated(pageable);
-                
-                // Convert posts to DTOs with pre-signed URLs
-                List<PostDTO> postsWithUrls = postsPage.getContent().stream()
-                        .map(post -> {
-                            try {
-                                // Handle orphaned posts
-                                if (post.getUser() == null) {
-                                    User dummyUser = new User();
-                                    dummyUser.setId(-1L);
-                                    dummyUser.setUsername("Unknown User");
-                                    dummyUser.setRole("USER");
-                                    post.setUser(dummyUser);
-                                }
-                                return PostDTO.fromPostWithPresignedUrls(post, s3Service);
-                            } catch (Exception e) {
-                                // Fallback if S3 fails
-                                try {
-                                    return PostDTO.fromPost(post);
-                                } catch (Exception ex) {
-                                    return null;
-                                }
-                            }
-                        })
-                        .filter(dto -> dto != null)
-                        .collect(java.util.stream.Collectors.toList());
-                
-                Map<String, Object> response = new HashMap<>();
-                response.put("posts", postsWithUrls);
-                response.put("currentPage", postsPage.getNumber());
-                response.put("totalPages", postsPage.getTotalPages());
-                response.put("totalElements", postsPage.getTotalElements());
-                response.put("hasNext", postsPage.hasNext());
-                response.put("hasPrevious", postsPage.hasPrevious());
-                
-                return ResponseEntity.ok(response);
-            } else {
-                List<PostDTO> posts = postService.getAllPostsDTO();
-                return ResponseEntity.ok(posts);
+            // Always use pagination logic for consistency, even if paginated=false is passed
+            // This fixes the issue where "No posts yet" is shown because the else block was missing or empty
+            if (page < 0 || size < 1 || size > 100) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Invalid pagination parameters. Page must be >= 0, size must be between 1 and 100"));
             }
+            
+            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+            Page<PostDTO> postsPage = postService.getAllPostsPaginatedDTO(pageable);
+            
+            // Filter out any null DTOs if conversion failed completely
+            List<PostDTO> postsWithUrls = postsPage.getContent().stream()
+                    .filter(dto -> dto != null)
+                    .collect(java.util.stream.Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("posts", postsWithUrls);
+            response.put("currentPage", postsPage.getNumber());
+            response.put("totalItems", postsPage.getTotalElements());
+            response.put("totalPages", postsPage.getTotalPages());
+            
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to load posts: " + e.getMessage()));
+                    .body(Map.of("error", "Failed to fetch posts", "details", e.getMessage()));
         }
     }
 
@@ -166,8 +142,8 @@ public class PostController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Post>> getPostsByUserId(@PathVariable Long userId) {
-        List<Post> posts = postService.getPostsByUserId(userId);
+    public ResponseEntity<List<PostDTO>> getPostsByUserId(@PathVariable Long userId) {
+        List<PostDTO> posts = postService.getPostsDTOByUserId(userId);
         return ResponseEntity.ok(posts);
     }
 

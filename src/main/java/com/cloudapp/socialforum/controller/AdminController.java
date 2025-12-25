@@ -46,7 +46,7 @@ public class AdminController {
     @Autowired
     private MeterRegistry meterRegistry;
 
-    @Value("${aws.s3.bucket-name:social-forum-media}")
+    @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
     // --- User Management ---

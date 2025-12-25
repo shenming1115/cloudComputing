@@ -7,8 +7,8 @@ spring:
 
   datasource:
     url: jdbc:mysql://social-forum-db-mysql.cbii4gykc5p0.ap-southeast-2.rds.amazonaws.com:3306/social_forum?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kuala_Lumpur
-    username: admin123
-    password: pxTUxZPBBmgk3XD
+    username: ${DB_USERNAME:admin123}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
@@ -45,6 +45,7 @@ spring:
 
 server:
   port: 8080
+  address: 0.0.0.0
   shutdown: graceful
 
 jwt:
@@ -63,11 +64,11 @@ management:
 aws:
   region: ap-southeast-2
   s3:
-    bucket-name: social-forum-artifacts
+    bucket-name: ${S3_BUCKET_NAME}
     region: ap-southeast-2
   cloudfront:
-    domain: ${CLOUDFRONT_DOMAIN:d12345678.cloudfront.net}
+    domain: ${CLOUDFRONT_DOMAIN}
 
 turnstile:
-  site-key: 0x4AAAAAAACIM1MoqYpHJ_b99
-  secret-key: 0x4AAAAAAACIM1Gnv0QO3qUj1V17wnDwuV_4
+  site-key: ${TURNSTILE_SITE_KEY}
+  secret-key: ${TURNSTILE_SECRET_KEY}

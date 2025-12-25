@@ -1,137 +1,138 @@
-# Social Forum Application (Meghan Cloud)
+# Social Forum - Cloud Native Application
 
 ## 📖 Project Overview
-**Social Forum** is a comprehensive full-stack social media platform designed to demonstrate modern cloud computing principles. It features a robust backend built with **Spring Boot**, a responsive frontend using **Vanilla JavaScript/HTML/CSS**, and leverages **AWS** services for scalable infrastructure. The application includes advanced features like AI chat integration, secure media handling, and an administrative dashboard.
+**Social Forum** is a scalable, cloud-native social media platform designed to demonstrate modern cloud computing principles. Built with **Spring Boot** and deployed on **AWS**, it features a secure RESTful API, stateless authentication, and integration with cloud storage and AI services for content moderation.
+
+The application follows a **Monolithic Resource Architecture** where the backend API and frontend static assets are packaged together but utilize managed cloud services (RDS, S3, CloudFront) for persistence and content delivery.
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## 🏗️ System Architecture
 
-### **Backend**
-*   **Framework**: Java Spring Boot 3.x
-*   **Security**: Spring Security with JWT (Stateless Authentication)
-*   **Build Tool**: Maven
+### High-Level Design
+The system is designed for High Availability (HA) and Fault Tolerance using AWS infrastructure.
 
-### **Frontend**
-*   **Core**: HTML5, CSS3, Vanilla JavaScript (ES6+)
-*   **Styling**: Custom CSS (Responsive Design)
-*   **Communication**: Fetch API for RESTful endpoints
+*   **Compute:** Spring Boot application running on EC2 instances (Auto Scaling Group).
+*   **Database:** Amazon RDS (MySQL) for relational data (Users, Posts, Comments).
+*   **Storage:** Amazon S3 for storing user-uploaded media (Images).
+*   **Content Delivery:** Amazon CloudFront (CDN) for low-latency delivery of static assets and images.
+*   **Security:**
+    *   **JWT (JSON Web Tokens):** Stateless authentication.
+    *   **Cloudflare Turnstile:** Bot protection for login/registration.
+    *   **AWS SSM:** Secrets management (no hardcoded passwords).
 
-### **Cloud Infrastructure (AWS)**
-*   **Compute**: AWS EC2 (Application Hosting)
-*   **Database**: AWS RDS (MySQL 8.0)
-*   **Storage**: AWS S3 (Private Bucket for Images/Videos)
-*   **CDN**: AWS CloudFront (Secure Content Delivery)
-*   **Parameter Store**: AWS Systems Manager (SSM) for sensitive config
-
-### **AI Integration**
-*   **Service**: Cloudflare Workers
-*   **Model**: Llama-3 (via Cloudflare AI Gateway)
-*   **Function**: Intelligent Chatbot Assistant
+### Tech Stack
+| Category | Technology |
+| :--- | :--- |
+| **Backend** | Java 17, Spring Boot 3.x, Spring Security, Spring Data JPA |
+| **Frontend** | HTML5, CSS3, Vanilla JavaScript (Fetch API) |
+| **Database** | MySQL 8.0 (AWS RDS) |
+| **Cloud** | AWS (EC2, S3, CloudFront, RDS, VPC, IAM) |
+| **AI Integration** | Google Gemini Pro (Content Moderation) |
+| **Build Tool** | Maven |
 
 ---
 
-## ✨ Key Features
+## 🚀 Key Features
 
-### **1. User Management**
-*   Secure Registration & Login (JWT-based).
-*   Role-based Access Control (USER vs ADMIN).
-*   Profile Management.
+1.  **Secure Authentication**
+    *   User Registration & Login with BCrypt password hashing.
+    *   JWT-based session management.
+    *   Bot verification using Cloudflare Turnstile.
 
-### **2. Content Management**
-*   **Posts**: Create text, image, and video posts.
-*   **Media**: Secure upload to S3 with CloudFront delivery.
-*   **Interactions**: Like posts/comments, add comments.
-*   **Sharing**: Generate unique shareable links for posts.
+2.  **Post Management**
+    *   Create, Read, Update, and Delete (CRUD) posts.
+    *   Image uploads handled via AWS S3 with public access via CloudFront.
 
-### **3. Admin Dashboard**
-*   **User Control**: View, promote, or delete users.
-*   **System Stats**: Real-time monitoring of CPU, Memory, and DB connections.
-*   **S3 Management**: List and delete orphaned files from S3.
-*   **Logs**: View system logs directly in the dashboard.
+3.  **AI Content Moderation**
+    *   Integrated **Google Gemini Pro** to analyze post content.
+    *   Automatically flags or hides posts containing hate speech or inappropriate content.
 
-### **4. AI Assistant**
-*   Integrated chat interface powered by Llama-3.
-*   Context-aware responses for user queries.
+4.  **Admin Dashboard**
+    *   View system health metrics.
+    *   Monitor user statistics and moderation logs.
+
+---
+
+## ⚙️ Configuration & Environment Variables
+
+**Security Note:** This application does **not** use hardcoded passwords. All sensitive credentials must be injected via Environment Variables or System Properties at runtime.
+
+### Required Environment Variables
+To run this application locally or in production, set the following variables:
+
+| Variable Name | Description | Example |
+| :--- | :--- | :--- |
+| `DB_USERNAME` | Database Username | `admin` |
+| `DB_PASSWORD` | Database Password | `SecureP@ssw0rd!` |
+| `JWT_SECRET` | Secret key for signing tokens | `YourLongRandomSecretKey...` |
+| `S3_BUCKET_NAME` | AWS S3 Bucket for media | `social-forum-media` |
+| `CLOUDFRONT_DOMAIN` | CloudFront Distribution Domain | `d12345.cloudfront.net` |
+| `TURNSTILE_SITE_KEY` | Cloudflare Site Key | `0x4AAAA...` |
+| `TURNSTILE_SECRET_KEY`| Cloudflare Secret Key | `0x4AAAA...` |
+
+### Profiles
+The application supports Spring Profiles:
+*   `local`: For local development (uses `application-local.yml`).
+*   `prod`: For AWS deployment (uses `application-prod.yml`).
+
+To activate a profile:
+```bash
+export SPRING_PROFILES_ACTIVE=prod
+```
+
+---
+
+## 🛠️ Installation & Setup
+
+### Prerequisites
+*   Java Development Kit (JDK) 17+
+*   Maven 3.8+
+*   MySQL Database (Local or Remote)
+
+### Build Steps
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/your-username/social-forum.git
+    cd social-forum
+    ```
+
+2.  **Build the JAR artifact**
+    ```bash
+    mvn clean package -DskipTests
+    ```
+
+3.  **Run the Application**
+    ```bash
+    java -jar target/social-forum-0.0.1-SNAPSHOT.jar \
+      --DB_USERNAME=root \
+      --DB_PASSWORD=root \
+      --JWT_SECRET=mysecretkey
+    ```
 
 ---
 
 ## 📂 Project Structure
 
-```
-cloudComputing/
-├── src/
-│   ├── main/
-│   │   ├── java/com/cloudapp/socialforum/
-│   │   │   ├── config/       # Security & App Config
-│   │   │   ├── controller/   # REST API Endpoints
-│   │   │   ├── model/        # JPA Entities
-│   │   │   ├── repository/   # Data Access Layer
-│   │   │   ├── service/      # Business Logic
-│   │   │   └── security/     # JWT Filters & Auth
-│   │   └── resources/
-│   │       ├── static/       # Frontend Assets (HTML/CSS/JS)
-│   │       ├── application.yml # Main Configuration
-│   │       └── application-*.yml # Environment-specific Config
-├── pom.xml                   # Maven Dependencies
-└── mvnw / mvnw.cmd           # Maven Wrapper
+```text
+src/main/
+├── java/com/socialforum/
+│   ├── config/       # Security & AWS Config
+│   ├── controller/   # REST API Endpoints
+│   ├── entity/       # Database Models
+│   ├── repository/   # Data Access Layer
+│   └── service/      # Business Logic
+└── resources/
+    ├── application.yml  # Main Config
+    └── static/          # Frontend Assets
+        ├── css/
+        ├── js/          # API & Auth Logic
+        └── index.html
 ```
 
----
 
-## 🚀 Getting Started
-
-### **Prerequisites**
-*   Java Development Kit (JDK) 17 or higher
-*   Maven (optional, wrapper provided)
-*   MySQL Database (Local or RDS)
-*   AWS Credentials (for S3/SSM access)
-
-### **Configuration**
-The application uses `application.yml` for configuration. Key environment variables or properties include:
-
-*   `spring.datasource.url`: JDBC URL for MySQL.
-*   `aws.s3.bucket-name`: Target S3 bucket.
-*   `aws.cloudfront.domain`: CloudFront distribution domain.
-*   `jwt.secret`: Secret key for token generation.
-
-### **Running Locally**
-
-1.  **Clone the repository**:
-    ```bash
-    git clone <repository-url>
-    cd cloudComputing
-    ```
-
-2.  **Build the project**:
-    ```bash
-    ./mvnw clean install
-    ```
-
-3.  **Run the application**:
-    ```bash
-    ./mvnw spring-boot:run
-    ```
-    *The application will start on `http://localhost:8080`*
-
-4.  **Access the App**:
-    *   **Home**: `http://localhost:8080/index.html`
-    *   **Login**: `http://localhost:8080/login.html`
-    *   **Admin**: `http://localhost:8080/admin-dashboard.html` (Requires ADMIN role)
 
 ---
 
-## 🔒 Security Highlights
-*   **S3 Security**: The S3 bucket is **Private**. Files are accessed only via **Pre-signed URLs** or **CloudFront Signed URLs**, ensuring no unauthorized direct access.
-*   **Data Protection**: Passwords are hashed using **BCrypt**.
-*   **API Security**: All sensitive endpoints are protected by JWT filters.
-
----
-
-## 🛠️ Troubleshooting
-*   **S3 Upload Fails**: Check AWS Credentials in your environment (`~/.aws/credentials` or Environment Variables).
-*   **Database Connection Error**: Verify RDS Security Group allows traffic from your IP.
-*   **White Screen/UI Issues**: Clear browser cache or check console for JS errors.
-
----
-*Generated for Meghan Cloud Project - Semester 2*
+## 📝 License
+This project is for educational purposes.

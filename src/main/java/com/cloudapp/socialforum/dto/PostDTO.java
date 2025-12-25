@@ -22,7 +22,7 @@ public class PostDTO {
     private String shareToken;
     private Integer shareCount;
     
-    @JsonIgnoreProperties({"password"})
+    @JsonIgnoreProperties({"password", "hibernateLazyInitializer", "handler"})
     private User user;
     
     private Integer commentsCount;

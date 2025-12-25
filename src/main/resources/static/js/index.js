@@ -299,10 +299,13 @@ async function renderPosts() {
     try {
         const response = await fetch('/api/posts');
         if (response.ok) {
-            const posts = await response.json();
+            const data = await response.json();
+            
+            // Handle paginated response structure { posts: [], currentPage: 0, ... }
+            const posts = Array.isArray(data) ? data : (data.posts || []);
             
             if (!Array.isArray(posts)) {
-                console.error('Expected array of posts but got:', posts);
+                console.error('Expected array of posts but got:', data);
                 postsFeed.innerHTML = '<div class="text-center">Invalid data received from server.</div>';
                 return;
             }

@@ -1,8 +1,10 @@
 spring:
+  config:
+    import: aws-parameterstore:/social-forum/
   datasource:
-    url: jdbc:mysql://social-forum-db-mysql.cbii4gykc5p0.ap-southeast-2.rds.amazonaws.com:3306/social_forum?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${SPRING_DATASOURCE_USERNAME:admin}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:mysql://social-forum-db-mysql.cbii4gykc5p0.ap-southeast-2.rds.amazonaws.com:3306/socialforum?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${SPRING_DATASOURCE_USERNAME:admin123}
+    password: ${db.password}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
@@ -12,13 +14,35 @@ spring:
       max-lifetime: 1800000
   
   jpa:
+    defer-datasource-initialization: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-    show-sql: false
+
+jwt:
+  secret: ${jwt.secret}
+
+aws:
+  s3:
+    bucket-name: ${s3.bucket-name}
+  cloudfront:
+    domain: ${cloudfront.domain:d3esrdnqsl7nsk.cloudfront.net}
+
+turnstile:
+  secret-key: ${turnstile.secret}
+
+ai:
+  secret-key: ${ai.secret-key}
+  worker-url: ${ai.worker-url}
+
+google:
+  client-id: ${google.client-id}
+  client-secret: ${google.client-secret}
+  redirect-uri: ${google.redirect-uri}
 
 logging:
   level:
