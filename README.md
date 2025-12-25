@@ -130,10 +130,7 @@ src/main/
         └── index.html
 ```
 
----
 
-## 🤖 AI Disclosure
-This project utilizes **Google Gemini Pro** solely for the purpose of automated text analysis (Content Moderation feature). No user data is used for model training.
 
 ---
 
