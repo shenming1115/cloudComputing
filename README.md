@@ -28,7 +28,6 @@ The system is designed for High Availability (HA) and Fault Tolerance using AWS 
 | **Frontend** | HTML5, CSS3, Vanilla JavaScript (Fetch API) |
 | **Database** | MySQL 8.0 (AWS RDS) |
 | **Cloud** | AWS (EC2, S3, CloudFront, RDS, VPC, IAM) |
-| **AI Integration** | Google Gemini Pro (Content Moderation) |
 | **Build Tool** | Maven |
 
 ---
